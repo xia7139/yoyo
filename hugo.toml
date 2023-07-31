@@ -1,9 +1,9 @@
 baseURL = 'http://example.org/'
 languageCode = 'en-us'
-title = 'Nono Site'
+title = 'YoYo Site'
 theme = 'ananke'
 canonifyURLs = true
-disqusShortname = "Nono"
+disqusShortname = "YoYo"
 [params]
   commentoEnable = true
   custom_css = ["custom.css"]
