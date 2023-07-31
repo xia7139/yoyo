@@ -71,7 +71,8 @@ hugo server
 新建一个org文件，在前面加入 `#+HUGO_BASE_DIR: /xxx/blog` 指定site目录，这样，执行 `M-x org-hugo-auto-export` 命令(这个命令实际上是启动了一个minor mode，每当文件保存的时候，会同步转为对应目录下的md文件)后，org文件转换的md文件将会放在 `/xxx/blog/content/posts/` 目录下。 <br/>
 
 这时候，通过在site目录下执行 `hugo server` 命令，就可以启动site。在本地访问 `http://localhost:1313/` ，就可以正常看到刚写的博客，图片也可以正常展现(图片存在site根目录的static目录下)。如下： <br/>
-![](/ox-hugo/02_hugoFirstBlogPage.png) <br/>
+
+{{< figure src="/ox-hugo/02_hugoFirstBlogPage.png" width="900" >}} <br/>
 
 
 ## 将site目录上传到github并发布 {#将site目录上传到github并发布}
@@ -93,18 +94,26 @@ git push -u origin main
 在"Build and deployment"设置中，Source选”Github Actions“，然后选中hugo，对这个配置文件不用做任何改动，直接页面commit即可。 <br/>
 
 step1： <br/>
-![](/ox-hugo/03_githubActionsConfPageA.png) <br/>
+
+{{< figure src="/ox-hugo/03_githubActionsConfPageA.png" width="900" >}} <br/>
 
 step2： <br/>
-![](/ox-hugo/03_githubActionsConfPageB.png) <br/>
+
+{{< figure src="/ox-hugo/03_githubActionsConfPageB.png" width="900" >}} <br/>
 
 step3： <br/>
-![](/ox-hugo/03_githubActionsConfPageC.png) <br/>
+
+{{< figure src="/ox-hugo/03_githubActionsConfPageC.png" width="900" >}} <br/>
 
 step4： <br/>
-![](/ox-hugo/03_githubActionsConfPageD.png) <br/>
 
-注意，本地需要及时拉取更新，不然后续的commit无法push到远端。这样，就可以实现每次push之后，自动部署到pages博客。 <br/>
+{{< figure src="/ox-hugo/03_githubActionsConfPageD.png" width="900" >}} <br/>
+
+注意，本地需要及时拉取更新，不然后续的commit无法push到远端。 <br/>
+
+这样，就可以实现每次push之后，自动部署到pages博客。每次推送之后，可以在actions之后看到部署的过程。如下图： <br/>
+
+{{< figure src="/ox-hugo/04_githubActionsDeploying.png" width="900" >}} <br/>
 
 
 ## 问题记录 {#问题记录}
@@ -123,7 +132,7 @@ step4： <br/>
 
 首先，在site目录下新建一个自定义的css文件，内容如下(应该主要是最后一行起作用)： <br/>
 
-```bash
+```text
 $ cat assets/ananke/css/custom.css 
 .container {
   margin: 0 auto;
