@@ -1,0 +1,9 @@
+baseURL = 'http://example.org/'
+languageCode = 'en-us'
+title = 'Nono Site'
+theme = 'ananke'
+canonifyURLs = true
+disqusShortname = "Nono"
+[params]
+  commentoEnable = true
+  custom_css = ["custom.css"]
