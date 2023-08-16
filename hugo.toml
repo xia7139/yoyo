@@ -7,7 +7,7 @@ canonifyURLs = true
 [params]
   custom_css = ["custom.css"]
 
-[params.utterances]  # https://utteranc.es/
+[params.utteranc]  # https://utteranc.es/
 enable = true
 owner = "xia7139" # Your GitHub ID
 repo = "yoyo_comment"              # The repo to store comments
