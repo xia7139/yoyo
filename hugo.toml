@@ -5,6 +5,7 @@ theme = 'ananke'
 canonifyURLs = true
 # disqusShortname = "YoYo"
 [params]
+  commentEnable = true
   custom_css = ["custom.css"]
 
 [params.utteranc]  # https://utteranc.es/
