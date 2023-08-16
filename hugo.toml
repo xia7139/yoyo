@@ -3,10 +3,10 @@ languageCode = 'en-us'
 title = 'YoYo Site'
 theme = 'ananke'
 canonifyURLs = true
-disqusShortname = "YoYo"
+# disqusShortname = "YoYo"
 [params]
   custom_css = ["custom.css"]
-[params.utteranc]         # utteranc is a comment system based on GitHub issues. see https://utteranc.es
-    enable = true
-    repo = "xia7139/yoyo_comment"    # The repo to store comments
-    issueTerm = "pathname"
+
+[params.utterances]  # https://utteranc.es/
+owner = "xia7139" # Your GitHub ID
+repo = "yoyo_comment"              # The repo to store comments
