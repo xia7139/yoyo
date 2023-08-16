@@ -5,5 +5,8 @@ theme = 'ananke'
 canonifyURLs = true
 disqusShortname = "YoYo"
 [params]
-  commentoEnable = true
   custom_css = ["custom.css"]
+[params.utteranc]         # utteranc is a comment system based on GitHub issues. see https://utteranc.es
+    enable = true
+    repo = "xia7139/yoyo_comment"    # The repo to store comments
+    issueTerm = "pathname"
