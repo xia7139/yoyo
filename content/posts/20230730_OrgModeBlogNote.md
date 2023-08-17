@@ -19,6 +19,7 @@ draft = false
     - [图片显示](#图片显示)
     - [文章内容宽度](#文章内容宽度)
     - [增加基于utterances的comment支持](#增加基于utterances的comment支持)
+    - [增加访问统计功能](#增加访问统计功能)
 - [总结](#总结)
 
 </div>
@@ -210,6 +211,13 @@ $
 执行 `hugo server` 命令，可以在本地看到效果，推送到github部署完成之后，即可生效。 <br/>
 
 
+### 增加访问统计功能 {#增加访问统计功能}
+
+这里参照[^fn:8]，注册statcount之后，将对应的js片段添加即可。 <br/>
+
+这里执行 `cp themes/ananke/layouts/partials/site-footer.html layouts/partials/site-footer.html` 后，在其中添加，调下格式即可。 <br/>
+
+
 ## 总结 {#总结}
 
 这样，写一篇博客的工作流如下： <br/>
@@ -225,3 +233,4 @@ $
 [^fn:5]: [body width #91](https://github.com/theNewDynamic/gohugo-theme-ananke/issues/91)  <br/>
 [^fn:6]: [Change page-width and fonts in your Hugo website](https://www.sharank.com/posts/websites/change-pg-width-and-font-size/)  <br/>
 [^fn:7]: [utterances](https://utteranc.es/?installation_id=40781403&setup_action=install)  <br/>
+[^fn:8]: [使用 statcount 做静态网站全平台访问统计](https://ttzz.eu.org/posts/2022-10-05-take-statcount-for-site-statistics/) <br/>
