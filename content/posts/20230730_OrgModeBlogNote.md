@@ -18,6 +18,7 @@ draft = false
 - [问题记录](#问题记录)
     - [图片显示](#图片显示)
     - [文章内容宽度](#文章内容宽度)
+    - [增加基于utterances的comment支持](#增加基于utterances的comment支持)
 - [总结](#总结)
 
 </div>
@@ -169,6 +170,46 @@ $
 执行hugo server命令，重启site，即可生效。 <br/>
 
 
+### 增加基于utterances的comment支持 {#增加基于utterances的comment支持}
+
+前面如果配置了disqusShortname或者commento，可以支持评论，但是，需要额外的登录。这里该用utterances，一个轻量的基于github issue的评论系统[^fn:7]。 <br/>
+
+首先，需要新建一个public的github仓库，然后，在其中安装utterances。如下： <br/>
+
+{{< figure src="/ox-hugo/05_install_comment1.png" >}} <br/>
+
+{{< figure src="/ox-hugo/05_install_comment2.png" >}} <br/>
+
+这里用的主题是ananke，需要将site目录中的文件 `themes/ananke/layouts/partials/commento.html` ，拷贝到 `layouts/partials/commento.html` 目录(如果目录不存在则新建)。并修改其内容如下： <br/>
+
+```html
+<script src="https://utteranc.es/client.js"
+	  repo="xia7139/yoyo_comment" 
+	  issue-term="title"
+	  theme="github-light"
+	  crossorigin="anonymous"
+	  async>
+  </script>
+```
+
+最后，修改site目录hugo.toml配置如下： <br/>
+
+```text
+$ cat hugo.toml 
+baseURL = 'http://example.org/'
+languageCode = 'en-us'
+title = 'YoYo Site'
+theme = 'ananke'
+canonifyURLs = true
+[params]
+  commentoEnable = true
+  custom_css = ["custom.css"]
+$ 
+```
+
+执行 `hugo server` 命令，可以在本地看到效果，推送到github部署完成之后，即可生效。 <br/>
+
+
 ## 总结 {#总结}
 
 这样，写一篇博客的工作流如下： <br/>
@@ -183,3 +224,4 @@ $
 [^fn:4]: [Images from Hugo not displayed on GitHub pages](https://stackoverflow.com/questions/61574702/images-from-hugo-not-displayed-on-github-pages)  <br/>
 [^fn:5]: [body width #91](https://github.com/theNewDynamic/gohugo-theme-ananke/issues/91)  <br/>
 [^fn:6]: [Change page-width and fonts in your Hugo website](https://www.sharank.com/posts/websites/change-pg-width-and-font-size/)  <br/>
+[^fn:7]: [utterances](https://utteranc.es/?installation_id=40781403&setup_action=install)  <br/>
