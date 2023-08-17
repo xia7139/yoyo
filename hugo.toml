@@ -3,7 +3,6 @@ languageCode = 'en-us'
 title = 'YoYo Site'
 theme = 'ananke'
 canonifyURLs = true
-disqusShortname = "YoYo"
 [params]
   commentoEnable = true
   custom_css = ["custom.css"]
