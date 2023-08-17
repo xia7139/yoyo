@@ -3,12 +3,7 @@ languageCode = 'en-us'
 title = 'YoYo Site'
 theme = 'ananke'
 canonifyURLs = true
-# disqusShortname = "YoYo"
+disqusShortname = "YoYo"
 [params]
-  commentEnable = true
+  commentoEnable = true
   custom_css = ["custom.css"]
-
-[params.utteranc]  # https://utteranc.es/
-enable = true
-owner = "xia7139" # Your GitHub ID
-repo = "yoyo_comment"              # The repo to store comments
