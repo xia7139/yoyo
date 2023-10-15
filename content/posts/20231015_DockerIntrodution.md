@@ -8,6 +8,7 @@ draft = false
 
 <div class="heading">Table of Contents</div>
 
+- [Docker是什么](#docker是什么)
 - [介绍](#介绍)
     - [历史](#历史)
     - [Docker和传统虚拟化的比较](#docker和传统虚拟化的比较)
@@ -18,6 +19,7 @@ draft = false
         - [更轻松的迁移](#更轻松的迁移)
         - [更轻松的维护和扩展](#更轻松的维护和扩展)
         - [对比传统虚拟机总结](#对比传统虚拟机总结)
+    - [Docker的用途](#docker的用途)
 - [基本概念](#基本概念)
     - [镜像（Image）](#镜像-image)
     - [容器（Container）](#容器-container)
@@ -33,11 +35,21 @@ draft = false
 </div>
 <!--endtoc-->
 
+本文主要是"Docker 入门教程"[^fn:1]和"Docker, 从入门到实践"[^fn:2]的整理和学习笔记。 <br/>
+
+
+## Docker是什么 {#docker是什么}
+
+由于虚拟机存在这些缺点，Linux 发展出了另一种虚拟化技术：Linux 容器（Linux Containers，缩写为 LXC）。 <br/>
+Linux 容器不是模拟一个完整的操作系统，而是对进程进行隔离。或者说，在正常进程的外面套了一个保护层。对于容器里面的进程来说，它接触到的各种资源都是虚拟的，从而实现与底层系统的隔离。 <br/>
+Docker 属于 Linux 容器的一种封装，提供简单易用的容器使用接口。它是目前最流行的 Linux 容器解决方案。 <br/>
+Docker 将应用程序与该程序的依赖，打包在一个文件里面。运行这个文件，就会生成一个虚拟容器。程序在这个虚拟容器里运行，就好像在真实的物理机上运行一样。有了 Docker，就不用担心环境问题。 <br/>
+总体来说，Docker 的接口相当简单，用户可以方便地创建和使用容器，把自己的应用放入容器。容器还可以进行版本管理、复制、分享、修改，就像管理普通的代码一样。 <br/>
 
 
 ## 介绍 {#介绍}
 
-参考：[^fn:1] <br/>
+参考：[^fn:3] <br/>
 
 
 ### 历史 {#历史}
@@ -91,6 +103,15 @@ Docker 使用的分层存储以及镜像的技术，使得应用重复部分的�
 #### 对比传统虚拟机总结 {#对比传统虚拟机总结}
 
 {{< figure src="/ox-hugo/03_DockerVsTraditionalVisualization.png" >}} <br/>
+
+
+### Docker的用途 {#docker的用途}
+
+Docker 的主要用途，目前有三大类。 <br/>
+
+-   提供一次性的环境。比如，本地测试他人的软件、持续集成的时候提供单元测试和构建的环境。 <br/>
+-   提供弹性的云服务。因为 Docker 容器可以随开随关，很适合动态扩容和缩容。 <br/>
+-   组建微服务架构。通过多个容器，一台机器可以跑多个服务，因此在本机就可以模拟出微服务架构。 <br/>
 
 
 ## 基本概念 {#基本概念}
@@ -264,7 +285,8 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 $
 ```
 
-参考[^fn:2] <br/>
+参考[^fn:1] <br/>
 
-[^fn:1]: [什么是 Docker](https://yeasy.gitbook.io/docker_practice/introduction/what)  <br/>
-[^fn:2]: [Docker 入门教程](http://www.ruanyifeng.com/blog/2018/02/docker-tutorial.html) <br/>
+[^fn:1]: [Docker 入门教程](http://www.ruanyifeng.com/blog/2018/02/docker-tutorial.html) <br/>
+[^fn:2]: [Docker, 从入门到实践](https://yeasy.gitbook.io/docker_practice/)  <br/>
+[^fn:3]: [什么是 Docker](https://yeasy.gitbook.io/docker_practice/introduction/what)  <br/>
