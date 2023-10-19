@@ -57,7 +57,7 @@ $
 
 ```text
 $ ls ~/.memos/
-ChengdeMBP:memos_tmp chengxia$ docker run -d --name memos -p 5230:5230 -v ~/.memos/:/var/opt/memos neosmemo/memos:latest
+$ docker run -d --name memos -p 5230:5230 -v ~/.memos/:/var/opt/memos neosmemo/memos:latest
 892fc5d0dbe8e23596914e12f90fb2dc469215504cfaad1baf82c15fe90370b7
 $ ls ~/.memos/
 memos_prod.db		memos_prod.db-shm	memos_prod.db-wal
@@ -69,6 +69,8 @@ $
 点击上图中的超链接，就可以打开这个镜像包含的笔记系统： <br/>
 ![](/ox-hugo/04_MemosLogin.png) <br/>
 在前面的这个页面中，可以进行正常的登录和注册，并且可以正常使用这个系统。相关的数据会记录在本地的 `/.memos/` 目录映射到 `/var/opt/memos` 目录中。这样，下次启动镜像时，仍然映射同样的本地目录 `/.memos/` 到 `/var/opt/memos` 目录中，就可以正常访问到之前已经注册的用户以及其中发布的笔记信息。 <br/>
+
+从这里，可以看出，有了docker之后，在搭建这种类似系统时，就不用安装各种依赖、修改各种配置文件了，直接拉取镜像，然后运行就行。 <br/>
 
 
 ## doker-compose改写启动命令 {#doker-compose改写启动命令}
