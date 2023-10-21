@@ -1,6 +1,7 @@
 +++
 title = "借助Hugo和GithubPages实现用OrgMode写博客"
 author = ["Cheng Xia"]
+date = 2023-07-30
 draft = false
 +++
 

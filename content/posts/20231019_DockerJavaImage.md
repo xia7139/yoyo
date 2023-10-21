@@ -1,6 +1,7 @@
 +++
 title = "Docker打包java程序"
 author = ["Cheng Xia"]
+date = 2023-10-19
 draft = false
 +++
 
