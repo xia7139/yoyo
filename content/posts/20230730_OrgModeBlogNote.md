@@ -21,6 +21,7 @@ draft = false
     - [文章内容宽度](#文章内容宽度)
     - [增加基于utterances的comment支持](#增加基于utterances的comment支持)
     - [增加访问统计功能](#增加访问统计功能)
+    - [文章排序](#文章排序)
 - [总结](#总结)
 
 </div>
@@ -219,6 +220,34 @@ $
 这里执行 `cp themes/ananke/layouts/partials/site-footer.html layouts/partials/site-footer.html` 后，在其中添加，调下格式即可。 <br/>
 
 
+### 文章排序 {#文章排序}
+
+当写了多篇文章之后，经常会发现文章的顺序是乱的，并不是按照最后发布的再最前面的顺序排列的，有点让人困惑。 <br/>
+经查，发现org-hugo在将org文件转成md的之后，会在md文件的最前面添加一些元信息，好像专业术语叫front-matter[^fn:9]。如下是一个例子： <br/>
+
+```text
++++
+title = "Docker使用示例"
+author = ["Cheng Xia"]
+draft = false
++++
+```
+
+之所以是没有按照日期倒排，是因为前面的这些元信息里面没有指定日期信息。 <br/>
+如果在org文件的前面添加 `#+date: 2023-10-18` 指定日期后，org-hugo导出的md文件中，就会有日期信息。如下是一个例子： <br/>
+
+```text
++++
+title = "Docker使用示例"
+author = ["Cheng Xia"]
+date = 2023-10-18
+draft = false
++++
+```
+
+所有的文章都按照这个方法添加日期信息之后，排序就正常了。在我实际操作过程中，发现有一篇文章一直无法正常展现，就是在博客列表中看不到。查了半天，最终定位是，我把日期指定错了，指定成了一个大于当前时间的日期，导致无法这篇无法展现，修改之后就好了。 <br/>
+
+
 ## 总结 {#总结}
 
 这样，写一篇博客的工作流如下： <br/>
@@ -235,3 +264,4 @@ $
 [^fn:6]: [Change page-width and fonts in your Hugo website](https://www.sharank.com/posts/websites/change-pg-width-and-font-size/)  <br/>
 [^fn:7]: [utterances](https://utteranc.es/?installation_id=40781403&setup_action=install)  <br/>
 [^fn:8]: [使用 statcount 做静态网站全平台访问统计](https://ttzz.eu.org/posts/2022-10-05-take-statcount-for-site-statistics/) <br/>
+[^fn:9]: [org-hugo dates](https://ox-hugo.scripter.co/doc/dates/)  <br/>
