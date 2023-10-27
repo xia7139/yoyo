@@ -1,5 +1,5 @@
 +++
-title = "Shell教程"
+title = "Shell语法说明"
 author = ["Cheng Xia"]
 date = 2023-10-26
 draft = false
