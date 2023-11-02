@@ -9,6 +9,7 @@ draft = false
 
 <div class="heading">Table of Contents</div>
 
+- [重定向和文件描述符](#重定向和文件描述符)
 - [字符串操作](#字符串操作)
     - [按照长度截取](#按照长度截取)
     - [按照内容截取](#按照内容截取)
@@ -35,6 +36,7 @@ draft = false
         - [指定时间格式](#指定时间格式)
     - [date](#date)
     - [find](#find)
+        - [查找修改时间在15天以内的文件](#查找修改时间在15天以内的文件)
         - [按照文件名查找](#按照文件名查找)
         - [打印时间](#打印时间)
     - [tar](#tar)
@@ -48,6 +50,9 @@ draft = false
     - [cut](#cut)
         - [常用选项](#常用选项)
         - [典型场景](#典型场景)
+    - [read](#read)
+        - [选项](#选项)
+        - [场景](#场景)
     - [cp](#cp)
 - [典型场景](#典型场景)
     - [查找两个目录中的同名文件](#查找两个目录中的同名文件)
@@ -56,6 +61,106 @@ draft = false
 <!--endtoc-->
 
 本文主要介绍shell用法，基本是基于bash。 <br/>
+
+
+## 重定向和文件描述符 {#重定向和文件描述符}
+
+Bash中0、1、2是三个文件描述符，分别对应stdin、stdout和stderr，默认他们都指向terminal，也就是终端。默认Bash从终端读取输入，然后，输出到终端。可以通过重定向操作改变这几个文件描述符的指向。 <br/>
+重定向操作有如下几种： <br/>
+
+-   输出重定向， `n>file` ，n缺省为1。 <br/>
+-   输入重定向，  `n<file` ，n缺省为0。 <br/>
+-   文件标识符复制， `n>&m` 。 <br/>
+    这个比较难理解，功能上说，是让原来输出到文件描述符n的内容，重定向到文件描述符m。原理上说，实际是把文件描述符m的值赋给了n，这样，效果上来说，和前面的功能描述不冲突。 <br/>
+-   当有重定向操作时，从左到右设置。 <br/>
+    比如要把1和2两个文件描述符都重定向到一个文件，需要用 `1>file 2>&1` (等价于 `>file 2>&1` )。如果反过来 `2>&1 >file` 先把文件描述符1指向的值terminal赋给2，然后，再把1重定向到file，这样文件描述符2还是指向terminal，没有实现这个效果。 <br/>
+-   `<&-` 或者 `0<&-` 关闭文件描述符0(stdin)， `>&-` 或者 `1>&-` 关闭文件描述符1(stdout)。 <br/>
+-   `1<&3-` 文件描述符3赋值给1，之后马上关闭。 <br/>
+-   `sed 's/foo/bar/' a.txt >a.txt` 意图是大概是想将sed文件的输出再重定向回a.txt，但实际效果并不是这样。因为重定向操作在命令之前执行，这里用的重定向操作符是 `>` ，在执行时会将文件清空。这样，sed命令启动之前，文件已经被清空了，sed读不到任何内容，所以效果非预期。 <br/>
+    要实现前面的效果，可以通过管道将sed的输出给到cat命令，然后将cat命令的输出重定向回原文件。如下： <br/>
+    ```bash
+    sed 's/foo/bar/' a.txt | cat >a.txt
+    ```
+
+管道 <br/>
+连接左边命令的标准输出到右边命令的标准输入。实现上来说，它创建了一个特殊的文件，左边命令将这个文件打开为输出目的地，右边的命令将这个文件打开为输入源。如下是一个模拟管道的例子： <br/>
+
+```text
+$ echo "asdf" 1>a.txt && cat 0<a.txt
+asdf
+$
+```
+
+这个例子中，a.txt接受echo的输出，然后，输入给cat(cat命令如果不带参数，会默认从stdin读入一行并原样输出)，作用就相当于管道。 <br/>
+
+重定向的复杂例子： <br/>
+
+```bash
+{
+  {
+    cmd1 3>&- |
+      cmd2 2>&3 3>&-
+  } 2>&1 >&4 4>&- |
+    cmd3 3>&- 4>&-
+
+} 3>&2 4>&1
+```
+
+这里大括号的效果应该就是启动了一个子shell，有独立的文件描述符环境。执行时实际的效果应该如下： <br/>
+
+```text
+						   cmd2
+
+					   ---       +-------------+
+				       -->( 0 ) ---->| 1st pipe    |
+				      /	   ---       +-------------+
+				     /
+				    /	   ---       +-------------+
+	 cmd 1                	   /	  ( 1 ) ---->| /dev/pts/5  |
+				  /	   ---       +-------------+
+				 /
+ ---       +-------------+	/	   ---       +-------------+
+( 0 ) ---->| /dev/pts/5  |     /	  ( 2 ) ---->| /dev/pts/5  |
+ ---       +-------------+    /		   ---       +-------------+
+			     /
+ ---       +-------------+  /                       cmd3
+( 1 ) ---->| 1st pipe    | /
+ ---       +-------------+                 ---       +-------------+
+			     ------------>( 0 ) ---->| 2nd pipe    |
+ ---       +-------------+ /               ---       +-------------+
+( 2 ) ---->| 2nd pipe    |/
+ ---       +-------------+                 ---       +-------------+
+					  ( 1 ) ---->| /dev/pts/5  |
+					   ---       +-------------+
+
+					   ---       +-------------+
+					  ( 2 ) ---->| /dev/pts/5  |
+					   ---       +-------------+
+```
+
+exec命令 <br/>
+这个命令的作用是通过一个指定的程序替代原生的内置shell，如果没有指定程序，exec命令可以修改当前shell的文件描述符。 <br/>
+如下例子中按行读取并输出一个文件： <br/>
+
+```text
+while read -r line;do echo "$line";done < file
+```
+
+如果是想边按行读文件输出，并接收读入，如下命令是不行的： <br/>
+
+```text
+while read -r line;do echo "$line"; read -p "Press any key" -n 1;done < file
+```
+
+需要用exec命令先将读取的文件绑定一个新的文件描述符，然后通过给read命令的-u参数指定从这个文件描述符读取。如下： <br/>
+
+```bash
+exec 3<file
+while read -u 3 line;do echo "$line"; read -p "Press any key" -n 1;done
+```
+
+参考[^fn:1]。 <br/>
+链接[^fn:2]中解释了 `1<&3-` 。 <br/>
 
 
 ## 字符串操作 {#字符串操作}
@@ -112,7 +217,7 @@ $
 
 ### 基本语法 {#基本语法}
 
-if语句的基本语法[^fn:1]如下： <br/>
+if语句的基本语法[^fn:3]如下： <br/>
 
 ```text
 if [ condition ] 
@@ -197,7 +302,7 @@ then
 fi
 ```
 
-这里的正则是posix规范的[^fn:2]，而非一般的perl或者javascript[^fn:3]，如下： <br/>
+这里的正则是posix规范的[^fn:4]，而非一般的perl或者javascript[^fn:5]，如下： <br/>
 ![](/ox-hugo/01_RegexCompare.png) <br/>
 
 
@@ -289,7 +394,7 @@ fi
 
 ### while {#while}
 
-参考[^fn:4] <br/>
+参考[^fn:6] <br/>
 
 ```bash
 i=1
@@ -303,7 +408,7 @@ done
 
 ### for {#for}
 
-参考[^fn:4] <br/>
+参考[^fn:6] <br/>
 
 ```bash
 for ((i=1;i<10;i++)) ; do
@@ -334,7 +439,7 @@ done
 
 #### 常用选项 {#常用选项}
 
-参考：[^fn:5] <br/>
+参考：[^fn:7] <br/>
 
 -   -i, --ip-address, Display the IP address(es) of the host. <br/>
     显示ip地址。 <br/>
@@ -429,8 +534,31 @@ $ date "+%Y%m%d_%H%M%S"
 20231027_105958
 ```
 
+也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:8]。 <br/>
+
 
 ### find {#find}
+
+
+#### 查找修改时间在15天以内的文件 {#查找修改时间在15天以内的文件}
+
+```text
+find . -maxdepth 1 -type f -mtime -15
+```
+
+mtime说明[^fn:9]： <br/>
+如何更好的理解find -mtime +N/-N/N，这里小结下： <br/>
+-mtime n : n为数字，意思为在n天之前的“一天之内”被更改过内容的文件 <br/>
+-mtime +n : 列出在n天之前（不含n天本身）被更改过内容的文件名 <br/>
+-mtime -n : 列出在n天之内（含n天本身）被更改过内容的文件名 <br/>
+举个栗子：find $HOME -mtime 0 <br/>
+Search  for  files  in  your home directory which have been modified in the last twenty-four hours.  This command works this way because the time since each file was last modified is divided by 24 hours and  any remainder  is  discarded.   That means that to match -mtime 0, a file will have to have a modification in the past which is less than 24 hours ago. <br/>
+将根目录下24小时内更改过内容的文件列出： <br/>
+find / -mtime 0 <br/>
+场景举例： <br/>
+找“5天之内被更改过的档案名”find / -mtime -5 ； <br/>
+找“5天前的那一天被更改过的档案名”find / -mtime 5 ； <br/>
+找“5天之前被更改过的档案名”find / -mtime +5。 <br/>
 
 
 #### 按照文件名查找 {#按照文件名查找}
@@ -450,20 +578,20 @@ find . -maxdepth 1 -type f -name "*as*"
 
 #### 打印时间 {#打印时间}
 
-参考[^fn:6] <br/>
+参考[^fn:10] <br/>
 
 ```bash
 find . -maxdepth 1 -type f -printf "%p %TY-%Tm-%Td %TH:%TM:%TS %Tz\n"
 ```
 
-这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:7]。 <br/>
-不过，macos中的find命令，并不支持-printf选项[^fn:8]。 <br/>
+这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:11]。 <br/>
+不过，macos中的find命令，并不支持-printf选项[^fn:12]。 <br/>
 
 
 ### tar {#tar}
 
 tar命令的使用 <br/>
-tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:9] <br/>
+tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:13] <br/>
 
 
 #### 常用选项说明 {#常用选项说明}
@@ -631,7 +759,7 @@ $ tar -tvf all.tar
 $ 
 ```
 
-注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:10] <br/>
+注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:14] <br/>
 
 
 #### 解包 {#解包}
@@ -668,7 +796,7 @@ $ echo -e "asdf\tqwer\ttyui" | cut -f 1,2
 asdf	qwer
 ```
 
-这里echo命令的-e选项是为了启用反斜杠转义[^fn:11]。 <br/>
+这里echo命令的-e选项是为了启用反斜杠转义[^fn:15]。 <br/>
 
 指定分隔符为空格： <br/>
 
@@ -737,7 +865,7 @@ drwxr-xr-x	chengxia	160	26	all1
 -rw-r--r--	chengxia	0	27	c.txt
 ```
 
-不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:12]。如下： <br/>
+不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:16]。如下： <br/>
 
 ```text
 $ ls -al
@@ -785,6 +913,59 @@ $ ls -al | awk '{print "权限: "$1", 用户: "$3}'
 这里awk命令的用法可以参考对应的[章节](#awk_command_introduction)。 <br/>
 
 
+### read {#read}
+
+
+#### 选项 {#选项}
+
+参考[^fn:17]： <br/>
+
+```text
+read [-a aname] [-d delim] [-n nchars]
+    [-N nchars] [-p prompt] [-t timeout] [-u fd] [name …]
+
+-a arr
+读取数据保存到数组arr中，arr数组已存在则先清空
+
+-d delim
+指定读取数据时的分隔符，不指定时默认为换行符。当指定为空字符串时，则默认为\0。当指定为文件中不存在的符号，则直接读整个文件
+
+-n X
+每次读取X个字符，但如果读满X字符前遇到了分隔符，则也停止本次读取
+
+-N X
+每次读取X个字符，即使遇到了分隔符也不停止
+
+-p prompt
+交互式提示用户在终端输入的信息，默认不输出换行符
+
+-s
+用户在终端中的输入不会显示出来。在提示用户输入密码时应设置该选项
+
+-r
+使得读取到的反斜线不进行转义，而是作为一个普通反斜线字符 
+
+-t timeout
+超时时间，如果在超时时间内还未读满数据，则读取失败，可指定为小数时间
+
+-u fd
+从文件描述符中读取数据
+```
+
+
+#### 场景 {#场景}
+
+默认，可以直接将用户输入读入一个变量： <br/>
+
+```text
+# read asdf
+this is value of asdf
+# echo $asdf          
+this is value of asdf
+#
+```
+
+
 ### cp {#cp}
 
 一般来说，cp命令会覆盖掉原有同名文件，通过指定-n选项可以，不覆盖： <br/>
@@ -828,18 +1009,23 @@ c.txt
 $
 ```
 
-参考[^fn:13] <br/>
+参考[^fn:18] <br/>
 
-[^fn:1]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
-[^fn:2]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
-[^fn:3]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
-[^fn:4]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
-[^fn:5]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
-[^fn:6]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
-[^fn:7]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
-[^fn:8]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
-[^fn:9]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
-[^fn:10]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
-[^fn:11]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
-[^fn:12]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
-[^fn:13]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:1]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
+[^fn:2]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
+[^fn:3]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
+[^fn:4]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
+[^fn:5]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
+[^fn:6]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
+[^fn:7]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
+[^fn:8]: [How do I get the current Unix time in milliseconds in Bash?](https://serverfault.com/questions/151109/how-do-i-get-the-current-unix-time-in-milliseconds-in-bash) <br/>
+[^fn:9]: [彻底搞明白find命令mtime含义和用法](https://blog.csdn.net/db_murphy/article/details/107053545)  <br/>
+[^fn:10]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
+[^fn:11]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
+[^fn:12]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
+[^fn:13]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
+[^fn:14]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
+[^fn:15]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
+[^fn:16]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
+[^fn:17]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
+[^fn:18]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
