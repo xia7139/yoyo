@@ -39,13 +39,17 @@ draft = false
         - [查找修改时间在15天以内的文件](#查找修改时间在15天以内的文件)
         - [按照文件名查找](#按照文件名查找)
         - [打印时间](#打印时间)
+        - [查找某个时间区间内的文件](#查找某个时间区间内的文件)
     - [tar](#tar)
         - [常用选项说明](#常用选项说明)
         - [打包](#打包)
             - [简单将同一目录下的多个文件打成一个tar](#简单将同一目录下的多个文件打成一个tar)
             - [查看tar包中的文件列表](#查看tar包中的文件列表)
             - [往存量tar中添加文件](#往存量tar中添加文件)
+        - [查看压缩包中的内容](#查看压缩包中的内容)
         - [解包](#解包)
+            - [解压到当前目录](#解压到当前目录)
+            - [解压到指定目录](#解压到指定目录)
     - [awk](#awk_command_introduction)
     - [cut](#cut)
         - [常用选项](#常用选项)
@@ -54,8 +58,20 @@ draft = false
         - [选项](#选项)
         - [场景](#场景)
     - [cp](#cp)
+    - [cat](#cat)
+    - [touch](#touch)
+        - [选项](#选项)
+        - [场景](#场景)
+    - [awk](#awk)
+        - [场景](#场景)
+            - [输出文件中的指定行](#输出文件中的指定行)
+    - [comm](#comm)
+        - [常用选项](#常用选项)
+        - [场景](#场景)
 - [典型场景](#典型场景)
-    - [查找两个目录中的同名文件](#查找两个目录中的同名文件)
+    - [获取bash的进程的pid](#获取bash的进程的pid)
+    - [获取bash的版本](#获取bash的版本)
+    - [读取内容时忽略第一行](#读取内容时忽略第一行)
 
 </div>
 <!--endtoc-->
@@ -468,9 +484,9 @@ hostname -i
 -   -r, Reverse the order of the sort. <br/>
     结果反向排序。 <br/>
 -   -c, Use time when file status was last changed for sorting or printing. <br/>
-    指定显示change time。 <br/>
+    指定显示change time，默认是修改时间。 <br/>
 -   -u, Use time of last access, instead of time of last modification of the file for sorting (-t) or long printing (-l). <br/>
-    指定显示上次访问时间。 <br/>
+    指定显示上次访问时间，默认是修改时间。 <br/>
 -   -s, Display the number of blocks used in the file system by each file. <br/>
     以块为单位列出文件占用的大小。 <br/>
 
@@ -586,6 +602,20 @@ find . -maxdepth 1 -type f -printf "%p %TY-%Tm-%Td %TH:%TM:%TS %Tz\n"
 
 这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:11]。 <br/>
 不过，macos中的find命令，并不支持-printf选项[^fn:12]。 <br/>
+
+
+#### 查找某个时间区间内的文件 {#查找某个时间区间内的文件}
+
+```text
+$ ls -lt -D "%Y-%m-%d %H:%M:%S" *.txt
+-rw-r--r--  1 chengxia  staff  0 2023-11-08 02:11:53 c.txt
+-rw-r--r--  1 chengxia  staff  0 2023-11-08 02:11:33 b.txt
+-rw-r--r--  1 chengxia  staff  5 2023-11-08 02:11:23 a.txt
+$ find . -maxdepth 1 -type f -name "*.txt" -newermt '2023-11-08 02:11:10' ! -newermt '2023-11-08 02:11:40'
+./b.txt
+./a.txt
+$
+```
 
 
 ### tar {#tar}
@@ -762,7 +792,69 @@ $
 注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:14] <br/>
 
 
+#### 查看压缩包中的内容 {#查看压缩包中的内容}
+
+```text
+$ tar -tvf all.tar 
+-rw-r--r--  0 chengxia staff       7 11  6 02:27 a.txt
+-rw-r--r--  0 chengxia staff       0 11  6 02:27 b.txt
+-rw-r--r--  0 chengxia staff       0 11  6 02:27 c.txt
+```
+
+
 #### 解包 {#解包}
+
+
+##### 解压到当前目录 {#解压到当前目录}
+
+```text
+$ touch a.txt b.txt c.txt
+$ echo in_tar > a.txt 
+a$ tar -cvf all.tar *.txt
+a a.txt
+a b.txt
+a c.txt
+$ echo out_of_tar > a.txt
+$ cat a.txt 
+out_of_tar
+# 指定不覆盖当前文件
+$ tar -xkvf all.tar 
+x a.txt
+x b.txt
+x c.txt
+$ cat a.txt 
+out_of_tar
+# 默认会覆盖当前文件
+$ tar -xvf all.tar 
+x a.txt
+x b.txt
+x c.txt
+$ cat a.txt 
+in_tar
+$
+```
+
+
+##### 解压到指定目录 {#解压到指定目录}
+
+```text
+$ tar -tvf all.tar 
+-rw-r--r--  0 chengxia staff       7 11  6 02:27 a.txt
+-rw-r--r--  0 chengxia staff       0 11  6 02:27 b.txt
+-rw-r--r--  0 chengxia staff       0 11  6 02:27 c.txt
+$ tar -xvf all.tar -C asdf
+x a.txt
+x b.txt
+x c.txt
+$ ls asdf/
+a.txt	b.txt	c.txt
+$ ls -lt asdf/
+total 8
+-rw-r--r--  1 chengxia  staff  7 11  6 02:27 a.txt
+-rw-r--r--  1 chengxia  staff  0 11  6 02:27 b.txt
+-rw-r--r--  1 chengxia  staff  0 11  6 02:27 c.txt
+$ 
+```
 
 
 ### awk {#awk_command_introduction}
@@ -993,23 +1085,247 @@ $
 ```
 
 
-## 典型场景 {#典型场景}
+### cat {#cat}
 
-
-### 查找两个目录中的同名文件 {#查找两个目录中的同名文件}
+cat命令如果后面跟一个文件名，可以查看文件内容。如果没有跟任何内容，会从标准输入读取文件，并输出。如下： <br/>
 
 ```text
-$ ls tar_test/
-a.txt	all.tar	all0	all1	b.txt	c.txt
-$ ls hhh_test/
-a.txt	c.txt
-$ comm -1 -2 <(ls tar_test | sort) <(ls hhh_test | sort)
-a.txt
-c.txt
+$ cat a.txt 
+asdf
+$ cat
+This is a input line of user.
+This is a input line of user.
+This is another input line of user.
+This is another input line of user.
+^C
+$ echo 'foo bar' | cat
+foo bar
 $
 ```
 
+
+### touch {#touch}
+
+
+#### 选项 {#选项}
+
+-   -m, Change the modification time of the file.  The access time of the file is not changed unless the -a flag is also specified. <br/>
+    改变文件的修改时间。 <br/>
+-   -a, Change the access time of the file.  The modification time of the file is not changed unless the -m flag is also specified. <br/>
+    改变文件的上次访问时间。 <br/>
+-   -t, Change the access and modification times to the specified time instead of the current time of day. <br/>
+    The argument is of the form “[[CC]YY]MMDDhhmm[.SS]” where each pair of letters represents the following: <br/>
+    
+    -   CC      The first two digits of the year (the century). <br/>
+    -   YY      The second two digits of the year.  If “YY” is specified, but “CC” is not, a value for “YY” between 69 and 99 results in a “CC” value of 19.  Otherwise, a “CC” value of 20 is used. <br/>
+    -   MM      The month of the year, from 01 to 12. <br/>
+    -   DD      the day of the month, from 01 to 31. <br/>
+    -   hh      The hour of the day, from 00 to 23. <br/>
+    -   mm      The minute of the hour, from 00 to 59. <br/>
+    -   SS      The second of the minute, from 00 to 60. <br/>
+    
+    If the “CC” and “YY” letter pairs are not specified, the values default to the current year.  If the “SS” letter pair is not specified, the value defaults to 0. <br/>
+    指定修改的具体时间，默认是当前时间。 <br/>
+
+
+#### 场景 {#场景}
+
+改变文件的修改时间为指定时间(macOS测过)： <br/>
+
+```text
+$ ls -alrt -D "%Y-%m-%d %H:%M:%S" a.txt 
+-rw-r--r--  1 chengxia  staff  2048 2023-10-27 08:14:55 a.txt
+$ touch -m -t 202310291111.23 a.txt 
+$ ls -alrt -D "%Y-%m-%d %H:%M:%S" a.txt 
+-rw-r--r--  1 chengxia  staff  2048 2023-10-29 11:11:23 a.txt
+$
+```
+
+
+### awk {#awk}
+
+
+#### 场景 {#场景}
+
+
+##### 输出文件中的指定行 {#输出文件中的指定行}
+
 参考[^fn:18] <br/>
+
+```text
+$ cat a.txt 
+a a,b,d,f
+b alsdjf,apple,kdjf
+c 163.2.201.1
+d 163.2.201.1
+
+# 打印第1到3行
+$ awk 'NR==1,NR==3{print}' a.txt 
+a a,b,d,f
+b alsdjf,apple,kdjf
+c 163.2.201.1
+
+# 打印第1行和第3行
+$ awk 'NR==1||NR==3{print}' a.txt 
+a a,b,d,f
+c 163.2.201.1
+$ awk '(NR==1)||(NR==3){print}' a.txt 
+a a,b,d,f
+c 163.2.201.1
+
+# 打印第2行及其之后的行
+$ awk 'NR==1||NR==3{print}' a.txt 
+$ awk 'NR>=2{print}' a.txt 
+b alsdjf,apple,kdjf
+c 163.2.201.1
+d 163.2.201.1
+
+# 打印奇数行
+$ awk '(NR%2)==1{print}' a.txt 
+a a,b,d,f
+c 163.2.201.1
+# 打印偶数行
+$ awk '(NR%2)==0{print}' a.txt 
+b alsdjf,apple,kdjf
+d 163.2.201.1
+$
+```
+
+
+### comm {#comm}
+
+
+#### 常用选项 {#常用选项}
+
+用法示例： <br/>
+
+```text
+comm [-123i] file1 file2
+```
+
+-   -1, Suppress printing of column 1, lines only in file1. <br/>
+    去掉只在file1中有的行。 <br/>
+-   -2, Suppress printing of column 2, lines only in file2. <br/>
+    去掉只在file2中有的行。 <br/>
+-   -3, Suppress printing of column 3, lines common to both. <br/>
+    去掉两个文件中都有的行。 <br/>
+-   -i, Case insensitive comparison of lines. <br/>
+    在比对时，忽略大小写。 <br/>
+
+实际上comm在不加任何选项时，会把比较的两个中的行处理成三列，第一列是只在file1中有的行，第二列是只在file2中有的行，第三列是两个文件中都有的行。从这个角度，就比较容易理解man page里面的说明了。 <br/>
+参考[^fn:19] <br/>
+
+
+#### 场景 {#场景}
+
+比较两个目录中的文件 <br/>
+
+```text
+# 不加任何参数时，输出第一列是文件1特有的，第二列是文件2特有，第三列是共有
+$ comm <(ls tar_test | sort) <(ls hhh_test | sort)
+		a.txt
+all.tar
+all0
+all1
+b.txt
+		c.txt
+	d.txt
+# 输出中去掉第一列(文件1特有的)
+$ comm -1 <(ls tar_test | sort) <(ls hhh_test | sort)
+	a.txt
+	c.txt
+d.txt
+# 输出中去掉第二列(文件2特有的)
+$ comm -2 <(ls tar_test | sort) <(ls hhh_test | sort)
+	a.txt
+all.tar
+all0
+all1
+b.txt
+	c.txt
+# 输出中去掉第三列(两个文件共有的)
+$ comm -3 <(ls tar_test | sort) <(ls hhh_test | sort)
+all.tar
+all0
+all1
+b.txt
+	d.txt
+# 输出中去掉两个文件特有的，只输出共有的。
+$ comm -1 -2 <(ls tar_test | sort) <(ls hhh_test | sort)
+a.txt
+c.txt
+# 输出文件1中有，但文件2中没有的。
+$ comm -2 -3 <(ls tar_test | sort) <(ls hhh_test | sort)
+all.tar
+all0
+all1
+b.txt
+# 输出文件2中有，但文件1中没有的
+$ comm -1 -3 <(ls tar_test | sort) <(ls hhh_test | sort)
+d.txt
+```
+
+参考[^fn:20] <br/>
+
+
+## 典型场景 {#典型场景}
+
+
+### 获取bash的进程的pid {#获取bash的进程的pid}
+
+```text
+$ echo $BASHPID
+
+$ echo $$
+731
+$ ps
+  PID TTY           TIME CMD
+  731 ttys000    0:00.25 -bash
+```
+
+在macos上BASHPID这个变量取不到，只能用$$。 <br/>
+
+
+### 获取bash的版本 {#获取bash的版本}
+
+```text
+$ echo $BASH_VERSION
+3.2.57(1)-release
+$ echo $BASH_VERSINFO
+3
+$
+```
+
+参考[^fn:21] <br/>
+
+
+### 读取内容时忽略第一行 {#读取内容时忽略第一行}
+
+比如这里需要读取ls命令的输出： <br/>
+
+```text
+$ ls -lt hhh_test/
+total 0
+-rw-r--r--  1 chengxia  staff  0 10 27 10:18 c.txt
+-rw-r--r--  1 chengxia  staff  0 10 27 10:17 a.txt
+$
+```
+
+假如需要从中解析出文件名，要忽略第一行，然就会在前面多一个空行： <br/>
+
+```text
+$ ls -lt hhh_test/ | awk '{print $9}'
+
+c.txt
+a.txt
+$ ls -lt hhh_test/ | (read foobar; awk '{print $9}')
+c.txt
+a.txt
+$
+```
+
+原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
+参考[^fn:22]。 <br/>
 
 [^fn:1]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
 [^fn:2]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
@@ -1028,4 +1344,8 @@ $
 [^fn:15]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
 [^fn:16]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
 [^fn:17]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
-[^fn:18]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:18]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
+[^fn:19]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
+[^fn:20]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:21]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
+[^fn:22]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
