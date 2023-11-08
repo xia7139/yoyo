@@ -40,6 +40,7 @@ draft = false
         - [常用选项](#常用选项)
         - [查看占用文件块的大小](#查看占用文件块的大小)
         - [指定时间格式](#指定时间格式)
+        - [遍历全部子目录](#遍历全部子目录)
     - [date](#date)
     - [find](#find)
         - [查找修改时间在15天以内的文件](#查找修改时间在15天以内的文件)
@@ -69,9 +70,14 @@ draft = false
     - [touch](#touch)
         - [选项](#选项)
         - [场景](#场景)
+    - [uniq](#uniq)
+        - [场景](#场景)
     - [awk](#awk)
         - [场景](#场景)
+            - [输出行中的指定字段](#输出行中的指定字段)
             - [输出文件中的指定行](#输出文件中的指定行)
+                - [行号筛选](#行号筛选)
+                - [根据内容筛选](#根据内容筛选)
     - [comm](#comm)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -79,6 +85,7 @@ draft = false
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
     - [读取内容时忽略第一行](#读取内容时忽略第一行)
+    - [同时输出多行](#同时输出多行)
 
 </div>
 <!--endtoc-->
@@ -555,6 +562,8 @@ hostname -i
     指定显示上次访问时间，默认是修改时间。 <br/>
 -   -s, Display the number of blocks used in the file system by each file. <br/>
     以块为单位列出文件占用的大小。 <br/>
+-   -R, Recursively list subdirectories encountered. <br/>
+    依次递归遍历全部子目录。 <br/>
 
 
 #### 查看占用文件块的大小 {#查看占用文件块的大小}
@@ -599,6 +608,85 @@ ChengdeMacBook-Pro:TrialProject chengxia$
 
 ```text
 ls -alrt --time-style="+%Y-%m-%d %H:%M:%S" ./React/
+```
+
+
+#### 遍历全部子目录 {#遍历全部子目录}
+
+```text
+$ tree tar_test
+tar_test
+├── a.txt
+├── all.tar
+├── all0
+│   ├── a.txt
+│   ├── b.txt
+│   └── c.txt
+├── all1
+│   ├── a.txt
+│   ├── b.txt
+│   └── c.txt
+├── b.txt
+├── c.txt
+└── tar_test2
+    ├── a.txt
+    ├── all.tar
+    ├── asdf
+    │   ├── a.txt
+    │   ├── b.txt
+    │   └── c.txt
+    ├── b.txt
+    └── c.txt
+
+4 directories, 17 files
+$ ls -Rlt tar_test
+total 24
+-rw-r--r--  1 chengxia  staff     0 11  8 02:11 c.txt
+-rw-r--r--  1 chengxia  staff     0 11  8 02:11 b.txt
+-rw-r--r--  1 chengxia  staff     5 11  8 02:11 a.txt
+drwxr-xr-x  8 chengxia  staff   256 11  6 02:37 tar_test2
+drwxr-xr-x  5 chengxia  staff   160 10 27 08:20 all0
+-rw-r--r--  1 chengxia  staff  4608 10 27 08:15 all.tar
+drwxr-xr-x  5 chengxia  staff   160 10 26 11:13 all1
+
+tar_test/tar_test2:
+total 16
+drwxr-xr-x  5 chengxia  staff   160 11  6 02:32 asdf
+-rw-r--r--  1 chengxia  staff  3072 11  6 02:28 all.tar
+-rw-r--r--  1 chengxia  staff     7 11  6 02:27 a.txt
+-rw-r--r--  1 chengxia  staff     0 11  6 02:27 b.txt
+-rw-r--r--  1 chengxia  staff     0 11  6 02:27 c.txt
+
+tar_test/tar_test2/asdf:
+total 8
+-rw-r--r--  1 chengxia  staff  7 11  6 02:27 a.txt
+-rw-r--r--  1 chengxia  staff  0 11  6 02:27 b.txt
+-rw-r--r--  1 chengxia  staff  0 11  6 02:27 c.txt
+
+tar_test/all0:
+total 8
+-rw-r--r--  1 chengxia  staff     0 10 27 11:13 c.txt
+-rw-r--r--  1 chengxia  staff  2048 10 27 08:14 a.txt
+-rw-r--r--  1 chengxia  staff     0 10 25 11:13 b.txt
+
+tar_test/all1:
+total 8
+-rw-r--r--  1 chengxia  staff     0 10 27 11:13 c.txt
+-rw-r--r--  1 chengxia  staff  2053 10 26 11:03 a.txt
+-rw-r--r--  1 chengxia  staff     0 10 25 11:13 b.txt
+$ 
+```
+
+类似地，检查每个子目录下有哪些文件： <br/>
+
+```text
+$ find tar_test -type d ! -name '.' | while read dir_name; do echo "$dir_name: $(ls $dir_name | wc -l)";done
+tar_test:        7
+tar_test/all0:        3
+tar_test/all1:        3
+tar_test/tar_test2:        5
+tar_test/tar_test2/asdf:        3
+$
 ```
 
 
@@ -1228,54 +1316,205 @@ $
 ```
 
 
+### uniq {#uniq}
+
+
+#### 场景 {#场景}
+
+对于排好序的文本行统计重复次数： <br/>
+
+```bash
+$ echo "apple
+apple
+pear
+apple
+pear
+cherry" | sort 
+apple
+apple
+apple
+cherry
+pear
+pear
+$ echo "apple
+apple
+pear
+apple
+pear
+cherry" | sort | uniq -c
+   3 apple
+   1 cherry
+   2 pear
+$
+```
+
+如果不排序，结果是不符合预期的： <br/>
+
+```bash
+$ echo "apple
+apple
+pear
+apple
+pear
+cherry" | uniq -c
+   2 apple
+   1 pear
+   1 apple
+   1 pear
+   1 cherry
+$
+```
+
+
 ### awk {#awk}
 
 
 #### 场景 {#场景}
 
 
+##### 输出行中的指定字段 {#输出行中的指定字段}
+
+$0代表整行，$n代表第n个字段，分隔符默认是1个或多个连续的空白字符。 <br/>
+
+```bash
+$ echo "a line 1
+b line 2
+c line 3
+d line 4" | awk '{print $1,$3}'
+a 1
+b 2
+c 3
+d 4
+$ echo "a line 1
+b line 2
+c line 3
+d line 4" | awk '{print "field 1:"$1", field 2:"$2,"field 3:"$3", whole line: "$0}'
+field 1:a, field 2:line field 3:1, whole line: a line 1
+field 1:b, field 2:line field 3:2, whole line: b line 2
+field 1:c, field 2:line field 3:3, whole line: c line 3
+field 1:d, field 2:line field 3:4, whole line: d line 4
+$
+```
+
+
 ##### 输出文件中的指定行 {#输出文件中的指定行}
+
+
+###### 行号筛选 {#行号筛选}
 
 参考[^fn:20] <br/>
 
-```text
-$ cat a.txt 
-a a,b,d,f
-b alsdjf,apple,kdjf
-c 163.2.201.1
-d 163.2.201.1
+-   筛选指定的行号 <br/>
+    ```text
+    $ cat a.txt 
+    a a,b,d,f
+    b alsdjf,apple,kdjf
+    c 163.2.201.1
+    d 163.2.201.1
+    
+    # 打印第1到3行
+    $ awk 'NR==1,NR==3{print}' a.txt 
+    a a,b,d,f
+    b alsdjf,apple,kdjf
+    c 163.2.201.1
+    
+    # 打印第2行及其之后的行
+    $ awk 'NR>=2{print}' a.txt 
+    b alsdjf,apple,kdjf
+    c 163.2.201.1
+    d 163.2.201.1
+    
+    # 打印奇数行
+    $ awk '(NR%2)==1{print}' a.txt 
+    a a,b,d,f
+    c 163.2.201.1
+    # 打印偶数行
+    $ awk '(NR%2)==0{print}' a.txt 
+    b alsdjf,apple,kdjf
+    d 163.2.201.1
+    $
+    ```
+-   行号关系运算 <br/>
+    ```bash
+    $ echo "a line 1
+    b line 2
+    c line 3
+    d line 4" | awk 'NR==1||NR==3{print}'
+    a line 1
+    c line 3
+    $ echo "a line 1
+    b line 2
+    c line 3
+    d line 4" | awk 'NR%2==1&&NR==3{print}'
+    c line 3
+    $  echo "a line 1
+    b line 2
+    c line 3
+    d line 4" | awk '(NR%2==1)&&(NR==3){print}'
+    c line 3
+    $
+    ```
 
-# 打印第1到3行
-$ awk 'NR==1,NR==3{print}' a.txt 
-a a,b,d,f
-b alsdjf,apple,kdjf
-c 163.2.201.1
 
-# 打印第1行和第3行
-$ awk 'NR==1||NR==3{print}' a.txt 
-a a,b,d,f
-c 163.2.201.1
-$ awk '(NR==1)||(NR==3){print}' a.txt 
-a a,b,d,f
-c 163.2.201.1
+###### 根据内容筛选 {#根据内容筛选}
 
-# 打印第2行及其之后的行
-$ awk 'NR==1||NR==3{print}' a.txt 
-$ awk 'NR>=2{print}' a.txt 
-b alsdjf,apple,kdjf
-c 163.2.201.1
-d 163.2.201.1
-
-# 打印奇数行
-$ awk '(NR%2)==1{print}' a.txt 
-a a,b,d,f
-c 163.2.201.1
-# 打印偶数行
-$ awk '(NR%2)==0{print}' a.txt 
-b alsdjf,apple,kdjf
-d 163.2.201.1
-$
-```
+-   打印包含指定内容的行 <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '/cat/{print}'
+    cat is lovely.
+    cat does not like dog
+    $
+    ```
+-   打印包含正则命中的行 <br/>
+    打印数字结尾的行： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '/[0-9]+$/{print}'
+    b line 2
+    c line 3
+    $
+    ```
+    打印非数字结尾的行： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '! /[0-9]+$/{print}'
+    cat is lovely.
+    cat does not like dog
+    $
+    ```
+    注意，这里在macOS和Ubuntu上叹号后面必须要带空格(在有些其它系统上不带空格也可以正常运行)，不然执行会报错如下： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '!/[0-9]+$/{print}'
+    -bash: !/[0-9]+$/{print}: event not found
+    > 
+    $
+    ```
+    具体，我没有找到原因。不过加空格肯定是好使的。 <br/>
+    
+    正则表达式多个条件组合： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '! /[0-9]+$/ && ! /not/{print}'
+    cat is lovely.
+    $ echo "cat is lovely.
+    b line 2
+    c line 3
+    cat does not like dog" | awk '(! /[0-9]+$/) && (! /not/){print}'
+    cat is lovely.
+    $
+    ```
 
 
 ### comm {#comm}
@@ -1413,6 +1652,37 @@ $
 原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
 参考[^fn:24]。 <br/>
 
+
+### 同时输出多行 {#同时输出多行}
+
+-   使用echo <br/>
+    ```bash
+    $ echo "a line 1
+    > b line 2
+    > c line 3
+    > d line 4"
+    a line 1
+    b line 2
+    c line 3
+    d line 4
+    $
+    ```
+-   使用 `here file` <br/>
+    ```bash
+    $ cat <<_end_
+    > a line 1
+    > b line 2
+    > c line 3
+    > d line 4
+    > _end_
+    a line 1
+    b line 2
+    c line 3
+    d line 4
+    $
+    ```
+    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:25]。 <br/>
+
 [^fn:1]: [Linux Shell基础 多个命令中的分号(;)、与(&amp;&amp;) 、 或(||)](https://www.cnblogs.com/lizhouwei/p/9991635.html) <br/>
 [^fn:2]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
 [^fn:3]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
@@ -1437,3 +1707,4 @@ $
 [^fn:22]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
 [^fn:23]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
 [^fn:24]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
+[^fn:25]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
