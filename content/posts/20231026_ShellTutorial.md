@@ -78,8 +78,17 @@ draft = false
                 - [行号筛选](#行号筛选)
                 - [根据内容筛选](#根据内容筛选)
             - [输出指定行的指定字段](#输出指定行的指定字段)
+        - [奇怪问题](#奇怪问题)
     - [comm](#comm)
         - [常用选项](#常用选项)
+        - [场景](#场景)
+    - [echo](#echo)
+        - [常用选项](#常用选项)
+        - [场景](#场景)
+    - [tee](#tee)
+        - [常用选项](#常用选项)
+        - [场景](#场景)
+    - [grep](#grep)
         - [场景](#场景)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
@@ -1466,6 +1475,16 @@ $
     $
     ```
 -   打印包含正则命中的行 <br/>
+    正则或的例子： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 02
+    c line 03
+    cat does not like dog" | awk '/line (02|03)$/{print}'
+    b line 02
+    c line 03
+    $
+    ```
     打印数字结尾的行： <br/>
     ```bash
     $ echo "cat is lovely.
@@ -1512,6 +1531,35 @@ $
     cat is lovely.
     $
     ```
+-   打印包含从命中正则1到命中正则2之间的行 <br/>
+    如下是一个例子，可以看出，都不包含正则命中的行： <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 02
+    b line 02
+    asdfa
+    xxxyy
+    asdfa
+    b line 03
+    c line 03
+    cat does not like dog" | awk '/line (02)$/{flag=1;next}/line (03)$/{flag=0}flag'
+    asdfa
+    xxxyy
+    asdfa
+    $ echo "cat is lovely.
+    b line 02
+    b line 02
+    asd fa
+    xx xyy
+    as dfa
+    b line 03
+    c line 03
+    cat does not like dog" | awk '/line (02)$/{flag=1;next}/line (03)$/{flag=0}flag {print $1,$2,$0}'
+    asd fa asd fa
+    xx xyy xx xyy
+    as dfa as dfa
+    $ 
+    ```
 
 
 ##### 输出指定行的指定字段 {#输出指定行的指定字段}
@@ -1531,6 +1579,29 @@ c line 3
 cat does not like dog" | awk '! /cat/{print "field 1,"$1"; field 3,"$3}'
 field 1,b; field 3,2
 field 1,c; field 3,3
+$
+```
+
+
+#### 奇怪问题 {#奇怪问题}
+
+在测试时，如果打印了最后一个字段或者整行，再后面如果再拼接其他字符串，其他字符串会出现在行首，并把前面的内容盖掉。经查，这个文件时windows上生成的行分隔符是\r\n。这样，行的最后，会有个多余的\r，导致后面的内容在前面输出，覆盖掉前面内容。如下： <br/>
+
+```bash
+$ echo -e "line 1\r\nline 2\r\nline 3\r" | awk '{print $0",xx"}'
+,xxe 1
+,xxe 2
+,xxe 3
+$ 
+```
+
+解决这个问题的方式，是把最后的\r去掉，如下： <br/>
+
+```bash
+$ echo -e "line 1\r\nline 2\r\nline 3\r" | awk '{gsub(/[\r]+$/,"",$0);print $0",xx"}'
+line 1,xx
+line 2,xx
+line 3,xx
 $
 ```
 
@@ -1609,6 +1680,88 @@ d.txt
 ```
 
 参考[^fn:22] <br/>
+
+
+### echo {#echo}
+
+
+#### 常用选项 {#常用选项}
+
+-   -n, 不换行输出 <br/>
+    缺省echo会在输出内容最后追加换行，加了-n之后，就原样输出内容，不会再在最后加换行。 <br/>
+-   -E, 输出转义字符 <br/>
+    常用的转义字符有\r、\n等 <br/>
+
+
+#### 场景 {#场景}
+
+-   输出转义字符 <br/>
+    ```text
+    $ echo -e "line 1\r\nline 2\r\nline 3"
+    line 1
+    line 2
+    line 3
+    $
+    ```
+-   不带换行的输出 <br/>
+
+<!--listend-->
+
+```text
+$ echo -n "this is a output line."
+this is a output line. $ 
+```
+
+
+### tee {#tee}
+
+
+#### 常用选项 {#常用选项}
+
+-   -a, Append the output to the files rather than overwriting them. <br/>
+    追加到文件最后，不清空原有文件内容。 <br/>
+
+
+#### 场景 {#场景}
+
+将标准输出和标准错误输出，同时输出到文件，并显示在控制台。 <br/>
+
+```text
+$ ls a.txt xxx.txt
+ls: xxx.txt: No such file or directory
+a.txt
+$ ls a.txt xxx.txt 2>&1 | tee -a log.log
+ls: xxx.txt: No such file or directory
+a.txt
+$ cat log.log 
+ls: xxx.txt: No such file or directory
+a.txt
+$ 
+```
+
+
+### grep {#grep}
+
+
+#### 场景 {#场景}
+
+-   查找命中某个正则表达式的行 <br/>
+    ```bash
+    $ echo "cat is lovely.
+    b line 02
+    b line 02
+    asd fa
+    xx xyy
+    as dfa
+    b line 03
+    c line 03
+    cat does not like dog" | grep 'line \(02\|03\)$'
+    b line 02
+    b line 02
+    b line 03
+    c line 03
+    $ 
+    ```
 
 
 ## 典型场景 {#典型场景}
