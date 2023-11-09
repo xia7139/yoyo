@@ -58,7 +58,6 @@ draft = false
         - [解包](#解包)
             - [解压到当前目录](#解压到当前目录)
             - [解压到指定目录](#解压到指定目录)
-    - [awk](#awk_command_introduction)
     - [cut](#cut)
         - [常用选项](#常用选项)
         - [典型场景](#典型场景)
@@ -72,12 +71,13 @@ draft = false
         - [场景](#场景)
     - [uniq](#uniq)
         - [场景](#场景)
-    - [awk](#awk)
+    - [awk](#awk_command_introduction)
         - [场景](#场景)
             - [输出行中的指定字段](#输出行中的指定字段)
             - [输出文件中的指定行](#输出文件中的指定行)
                 - [行号筛选](#行号筛选)
                 - [根据内容筛选](#根据内容筛选)
+            - [输出指定行的指定字段](#输出指定行的指定字段)
     - [comm](#comm)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -1031,9 +1031,6 @@ $
 ```
 
 
-### awk {#awk_command_introduction}
-
-
 ### cut {#cut}
 
 
@@ -1366,7 +1363,7 @@ $
 ```
 
 
-### awk {#awk}
+### awk {#awk_command_introduction}
 
 
 #### 场景 {#场景}
@@ -1515,6 +1512,25 @@ $
     cat is lovely.
     $
     ```
+
+
+##### 输出指定行的指定字段 {#输出指定行的指定字段}
+
+```bash
+$ echo "cat is lovely.
+b line 2
+c line 3
+cat does not like dog" | awk '! /cat/{print $1,$3}'
+b 2
+c 3
+$ echo "cat is lovely.
+b line 2
+c line 3
+cat does not like dog" | awk '! /cat/{print "field 1,"$1"; field 3,"$3}'
+field 1,b; field 3,2
+field 1,c; field 3,3
+$
+```
 
 
 ### comm {#comm}
