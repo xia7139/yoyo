@@ -9,6 +9,9 @@ draft = false
 
 <div class="heading">Table of Contents</div>
 
+- [命令行执行说明](#命令行执行说明)
+- [命令行基本语法说明](#命令行基本语法说明)
+    - [shell meta和command meta](#shell-meta和command-meta)
 - [行分隔符](#行分隔符)
 - [多条命令组合](#多条命令组合)
 - [命令描述符](#命令描述符)
@@ -89,6 +92,7 @@ draft = false
         - [常用选项](#常用选项)
         - [场景](#场景)
     - [grep](#grep)
+        - [常用选项](#常用选项)
         - [场景](#场景)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
@@ -102,6 +106,199 @@ draft = false
 本文主要介绍shell用法，基本是基于bash。 <br/>
 
 
+## 命令行执行说明 {#命令行执行说明}
+
+参考[^fn:1] <br/>
+命令行，就是shell prompt和Carriage Return字符(CR)之间的所有文字。一般来说，命令行的格式如下： <br/>
+
+```text
+command-name options argument
+```
+
+再执行时，shell会根据IFS(Internal Field Seperator)将命令行中的文字拆解为单词(或者叫字段，word)，然后，将其中的meta字符先做处理，最后再重组整个命令行，最后执行。 <br/>
+IFS是shell内部预设的分隔符可以由一个或者多个如下按键字符组成： <br/>
+
+-   空格键(Space) <br/>
+-   制表键(Tab) <br/>
+-   回车键(Enter) <br/>
+
+其中command-name每个命令必不可少的，可以是如下内容： <br/>
+
+-   明确路径指定的外部命令 <br/>
+-   命令别名(alias) <br/>
+-   自定义函数(function) <br/>
+-   shell内置的命令 <br/>
+-   $PATH变量之下的外部命令。 <br/>
+
+
+## 命令行基本语法说明 {#命令行基本语法说明}
+
+参考[^fn:2] <br/>
+命令行中所有的字符基本可以分为两类： <br/>
+
+-   字面字符，也就是普通的字符，没有特殊含义； <br/>
+-   meta字符，具有特殊保留含义的字符。 <br/>
+
+字面字符就是一般的字符，需要特殊注意的主要是meta字符。常见的meta字符如下： <br/>
+
+-   IFS, 由 &lt;space&gt; 或 &lt;tab&gt; 或 &lt;enter&gt; 三者之一組成(我们常用 space )； <br/>
+    IFS是用来分隔命令行的单词(word)的，命令行按照单词(word)来进行处理。 <br/>
+-   CR, 由 &lt;enter&gt; 产生。 <br/>
+    用来结束命令行，按下enter之后，命令会开始运行。 <br/>
+-   =, 设定变量。 <br/>
+-   $, 用作变量或者运算替换。 <br/>
+-   &gt;, 重定向stdout。 <br/>
+-   &lt;, 重定向stdin。 <br/>
+-   |, 管道操作符。 <br/>
+-   &amp;, 重定向文件描述符，或者将命令置于后台运行。 <br/>
+-   (), 将其中的命令放在nested shell中执行，或用于运算或者命令替换。 <br/>
+-   {}, 将其中的命令放在匿名函数(non-named function)中执行，或在变量替换中用来界定范围。 <br/>
+-   ;, 在前一个命令结束时，忽略其返回值，继续执行下一个命令。 <br/>
+-   &amp;&amp;, 在前一个命令执行成功之后，才执行后一个命令。 <br/>
+-   ||, 前一个命令执行失败，才执行后一个命令。 <br/>
+-   !, 执行历史列表中的命令。 <br/>
+
+如果要在命令行中，将这些meta字符的特殊含义关闭，就需要用到转义。转义有三种方式： <br/>
+
+-   单引号(hard quote)，其中所有的meta字符都被关闭； <br/>
+-   双引号(soft quote)，除某些(比如$)之外的其他大部分meta字符都被关闭； <br/>
+-   反斜线(escape)，紧跟在反斜线后面的meta字符被关闭。 <br/>
+
+如下几个例子： <br/>
+
+-   关闭meta字符空格 <br/>
+    ```text
+    # 空格字符没有转义，shell认为这个命令的含义是A=B，然后是IFS，执行C命令，会报错C找不到。
+    $ A=B C
+    C: command not found
+    $ echo $A
+    
+    # 将空格放在双引号中，这样空格的meta含义就被关闭了，shell将其解释为普通的字符。
+    $ A="B C"
+    $ echo $A
+    B C
+    
+    # 采用单引号关闭meta，效果也一样。
+    $ A='B C'
+    $ echo $A
+    B C
+    ```
+-   关闭meta字符回车 <br/>
+    ```text
+    # 这里<enter>被放在单引号(hard quote)中，就不会被shell解释为CR字符了。它就是一个简单的换行符(new line)。
+    $ A='B
+    > C
+    > '
+    # 这里双引号中的meta$不会被关闭，而其他meta字符均被关闭，因此，原样输出变量A的内容(包括换行)。
+    $ echo "$A"
+    B
+    C
+    
+    # 这里由于$A没有出现在双引号(soft quote)中，因此，这里变量替换完成后，命令重组时enter会被解释成IFS，而不是解释为换行符(new line)。
+    $ echo $A
+    B C
+    $ 
+    ```
+    这个例子中，最后的情况需要特别注意，也就是说，当变量中出现了enter，但没有被转义时，这时候会被shell认为是IFS，不是原样输出为换行符。这个特别关键，而且比较反直觉。需要特别注意。如果采用双引号做前面的转义，效果一样，如下： <br/>
+    ```text
+    $ A="B
+    > C
+    > "
+    $ echo "$A"
+    B
+    C
+    
+    $ echo $A
+    B C
+    $ 
+    ```
+-   escape关闭CR字符 <br/>
+    ```text
+    $ A=B\
+    > C\
+    > 
+    $ echo $A
+    BC
+    $ echo "$A"
+    BC
+    $
+    ```
+    从这个例子，可以看出，通过反斜线对enter字符进行转义时，对其关闭了meta字符的特性，同时，也没有让它保留为一个IFS字符。也就是说，经过这个escape转义，这个enter字符，什么都不是了，和没有一样。这块儿和前面的单引号或者双引号转义，还是有区别的。 <br/>
+-   escape关闭空格字符 <br/>
+    ```text
+    $ A=B\ C
+    $ echo $A
+    B C
+    $ echo "$A"
+    B C
+    $ echo '$A'
+    $A
+    $
+    ```
+    这个例子看，反斜线对于空格字符的转义，没有前面对于enter那样狠，转义之后，空格还作为一个普通的文本字符存在。 <br/>
+-   单双引号组合使用 <br/>
+    ```text
+    $ A=B\ C
+    $ echo '"$A"'
+    "$A"
+    $ echo "'$A'"
+    'B C'
+    $
+    ```
+    比较好理解，单引号中的全部meta字符都被关闭了，所以，原样输出，都没有做变量替换。而双引号在外面的情况中，先做了变量替换，然后又将替换后的内容做了原样输出。 <br/>
+
+
+### shell meta和command meta {#shell-meta和command-meta}
+
+参考[^fn:2] <br/>
+除了前面的shell内置的meta字符外，好多shell命令有自己特有的meta字符。对于这两种meta字符有交集的情况，就需要额外注意。 <br/>
+比如大括号{}在shell原生的含义是将其中的命令在一个匿名函数中执行(也可以简单视为一个语句块)。同时，在awk命令中，也会用大括号{}来区分awk的命令区段(BEGIN、MAIN和END)。如果在命令行中直接执行： <br/>
+
+```text
+$ echo -e "asdf\nqwert" > a.txt
+$ cat a.txt 
+asdf
+qwert
+$ awk {print $0} a.txt 
+awk: line 2: missing } near end of file
+$
+```
+
+这个报错看起来很奇怪，原因就是meta字符大括号没有被关闭，这样shell会认为 `{print $0}` 是一个命令块(command block)，但是在同一行中又没有分号”;“作为命令结束标识，因此就会报错。 <br/>
+解决的方式比较简单，关闭shell内置meta即可： <br/>
+
+```text
+$ cat a.txt 
+asdf
+qwert
+# 单引号全部关闭shell内置meta
+$ awk '{print $0}' a.txt 
+asdf
+qwert
+
+# 双引号关闭大部分，反斜线单独关闭$
+$ awk "{print \$0}" a.txt 
+asdf
+qwert
+
+# 通过反斜线逐一关闭各个meta
+$ awk \{print\ \$0\} a.txt 
+asdf
+qwert
+$
+```
+
+到这里，如果前面命令中 `$0` 的0是来自一个shell变量A，可以用如下方案： <br/>
+
+```bash
+A=0
+awk "{print \$$A}" 1.txt
+awk \{print\ \$$A\} 1.txt
+awk '{print $'$A'}' 1.txt
+awk '{print $'"$A"'}' 1.txt
+```
+
+
 ## 行分隔符 {#行分隔符}
 
 shell语句中，分号和换行都可以作为行分隔符，因此，每条语句的末尾不用额外加分号作为结束。 <br/>
@@ -109,7 +306,7 @@ shell语句中，分号和换行都可以作为行分隔符，因此，每条语
 
 ## 多条命令组合 {#多条命令组合}
 
-参考[^fn:1] <br/>
+参考[^fn:3] <br/>
 
 | 多命令执行符 | 格 式                | 作 用                                    |
 |--------|--------------------|----------------------------------------|
@@ -217,8 +414,8 @@ exec 3<file
 while read -u 3 line;do echo "$line"; read -p "Press any key" -n 1;done
 ```
 
-参考[^fn:2]。 <br/>
-链接[^fn:3]中解释了 `1<&3-` 。 <br/>
+参考[^fn:4]。 <br/>
+链接[^fn:5]中解释了 `1<&3-` 。 <br/>
 
 
 ## 字符串操作 {#字符串操作}
@@ -315,7 +512,7 @@ $
 
 ### 基本语法 {#基本语法}
 
-if语句的基本语法[^fn:4]如下： <br/>
+if语句的基本语法[^fn:6]如下： <br/>
 
 ```text
 if [ condition ] 
@@ -400,7 +597,7 @@ then
 fi
 ```
 
-这里的正则是posix规范的[^fn:5]，而非一般的perl或者javascript[^fn:6]，如下： <br/>
+这里的正则是posix规范的[^fn:7]，而非一般的perl或者javascript[^fn:8]，如下： <br/>
 ![](/ox-hugo/01_RegexCompare.png) <br/>
 
 
@@ -492,7 +689,7 @@ fi
 
 ### while {#while}
 
-参考[^fn:7] <br/>
+参考[^fn:9] <br/>
 
 ```bash
 i=1
@@ -506,7 +703,7 @@ done
 
 ### for {#for}
 
-参考[^fn:7] <br/>
+参考[^fn:9] <br/>
 
 ```bash
 for ((i=1;i<10;i++)) ; do
@@ -537,7 +734,7 @@ done
 
 #### 常用选项 {#常用选项}
 
-参考：[^fn:8] <br/>
+参考：[^fn:10] <br/>
 
 -   -i, --ip-address, Display the IP address(es) of the host. <br/>
     显示ip地址。 <br/>
@@ -713,7 +910,7 @@ $ date "+%Y%m%d_%H%M%S"
 20231027_105958
 ```
 
-也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:9]。 <br/>
+也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:11]。 <br/>
 
 
 ### find {#find}
@@ -725,7 +922,7 @@ $ date "+%Y%m%d_%H%M%S"
 find . -maxdepth 1 -type f -mtime -15
 ```
 
-mtime说明[^fn:10]： <br/>
+mtime说明[^fn:12]： <br/>
 如何更好的理解find -mtime +N/-N/N，这里小结下： <br/>
 -mtime n : n为数字，意思为在n天之前的“一天之内”被更改过内容的文件 <br/>
 -mtime +n : 列出在n天之前（不含n天本身）被更改过内容的文件名 <br/>
@@ -757,14 +954,14 @@ find . -maxdepth 1 -type f -name "*as*"
 
 #### 打印时间 {#打印时间}
 
-参考[^fn:11] <br/>
+参考[^fn:13] <br/>
 
 ```bash
 find . -maxdepth 1 -type f -printf "%p %TY-%Tm-%Td %TH:%TM:%TS %Tz\n"
 ```
 
-这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:12]。 <br/>
-不过，macos中的find命令，并不支持-printf选项[^fn:13]。 <br/>
+这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:14]。 <br/>
+不过，macos中的find命令，并不支持-printf选项[^fn:15]。 <br/>
 
 
 #### 查找某个时间区间内的文件 {#查找某个时间区间内的文件}
@@ -798,13 +995,13 @@ filename2nd:./Math.txt
 $
 ```
 
-参考[^fn:14] <br/>
+参考[^fn:16] <br/>
 
 
 ### tar {#tar}
 
 tar命令的使用 <br/>
-tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:15] <br/>
+tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:17] <br/>
 
 
 #### 常用选项说明 {#常用选项说明}
@@ -972,7 +1169,7 @@ $ tar -tvf all.tar
 $ 
 ```
 
-注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:16] <br/>
+注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:18] <br/>
 
 
 #### 查看压缩包中的内容 {#查看压缩包中的内容}
@@ -1068,7 +1265,7 @@ $ echo -e "asdf\tqwer\ttyui" | cut -f 1,2
 asdf	qwer
 ```
 
-这里echo命令的-e选项是为了启用反斜杠转义[^fn:17]。 <br/>
+这里echo命令的-e选项是为了启用反斜杠转义[^fn:19]。 <br/>
 
 指定分隔符为空格： <br/>
 
@@ -1137,7 +1334,7 @@ drwxr-xr-x	chengxia	160	26	all1
 -rw-r--r--	chengxia	0	27	c.txt
 ```
 
-不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:18]。如下： <br/>
+不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:20]。如下： <br/>
 
 ```text
 $ ls -al
@@ -1190,7 +1387,7 @@ $ ls -al | awk '{print "权限: "$1", 用户: "$3}'
 
 #### 选项 {#选项}
 
-参考[^fn:19]： <br/>
+参考[^fn:21]： <br/>
 
 ```text
 read [-a aname] [-d delim] [-n nchars]
@@ -1408,7 +1605,7 @@ $
 
 ###### 行号筛选 {#行号筛选}
 
-参考[^fn:20] <br/>
+参考[^fn:22] <br/>
 
 -   筛选指定的行号 <br/>
     ```text
@@ -1531,7 +1728,7 @@ $
     cat is lovely.
     $
     ```
--   打印包含从命中正则1到命中正则2之间的行 <br/>
+-   打印包含从命中正则1到命中正则2之间的行[^fn:23] <br/>
     如下是一个例子，可以看出，都不包含正则命中的行： <br/>
     ```bash
     $ echo "cat is lovely.
@@ -1627,7 +1824,7 @@ comm [-123i] file1 file2
     在比对时，忽略大小写。 <br/>
 
 实际上comm在不加任何选项时，会把比较的两个中的行处理成三列，第一列是只在file1中有的行，第二列是只在file2中有的行，第三列是两个文件中都有的行。从这个角度，就比较容易理解man page里面的说明了。 <br/>
-参考[^fn:21] <br/>
+参考[^fn:24] <br/>
 
 
 #### 场景 {#场景}
@@ -1679,7 +1876,7 @@ $ comm -1 -3 <(ls tar_test | sort) <(ls hhh_test | sort)
 d.txt
 ```
 
-参考[^fn:22] <br/>
+参考[^fn:25] <br/>
 
 
 ### echo {#echo}
@@ -1689,8 +1886,21 @@ d.txt
 
 -   -n, 不换行输出 <br/>
     缺省echo会在输出内容最后追加换行，加了-n之后，就原样输出内容，不会再在最后加换行。 <br/>
--   -E, 输出转义字符 <br/>
-    常用的转义字符有\r、\n等 <br/>
+-   -e, enable interpretation of backslash escapes <br/>
+    输出转义字符，常用的转义字符有\r、\n等，如下[^fn:26]： <br/>
+    -   \a：ALERT / BELL (从系统喇叭送出铃声) <br/>
+    -   \b：BACKSPACE ，也就是向左删除键 <br/>
+    -   \c：取消行末之换行符号 <br/>
+    -   \E：ESCAPE，跳脱键 <br/>
+    -   \f：FORMFEED，换页字符 <br/>
+    -   \n：NEWLINE，换行字符 <br/>
+    -   \r：RETURN，回车键 <br/>
+    -   \t：TAB，表格跳位键 <br/>
+    -   \v：VERTICAL TAB，垂直表格跳位键 <br/>
+    -   \n：ASCII 八进位编码(以 x 开首为十六进制) <br/>
+    -   \\\\：反斜线本身 <br/>
+-   -E, disable interpretation of backslash escapes (default) <br/>
+    禁用字符转义(默认就是这样)。 <br/>
 
 
 #### 场景 {#场景}
@@ -1743,6 +1953,14 @@ $
 ### grep {#grep}
 
 
+#### 常用选项 {#常用选项}
+
+-   -a, --text, Treat all files as ASCII text.  Normally grep will simply print “Binary file ... matches” if files contain binary characters.  Use of this option forces grep to output lines matching the specified pattern. <br/>
+    强制将所有文件视为ascii文本文件。缺省不带这个选项的话，只会打印出命中二进制文件，不会打印具体内容。设置之后，会打印具体的匹配内容。 <br/>
+-   -R, -r, --recursivei, Recursively search subdirectories listed.  (i.e., force grep to behave as rgrep). <br/>
+    递归搜索子目录。 <br/>
+
+
 #### 场景 {#场景}
 
 -   查找命中某个正则表达式的行 <br/>
@@ -1762,6 +1980,19 @@ $
     c line 03
     $ 
     ```
+-   查找目录和子目录中包含某个内容的文件 <br/>
+    ```text
+    $ grep -r 'asdf' .
+    Binary file ./all1/a.txt matches
+    ./a.txt:asdf
+    ./a.txt:asdf sssdeeee
+    $ grep -ar 'asdf' .
+    ./all1/a.txt:b.txt000644 000765 000024 00000000000 14516224303 012757 0ustar00chengxiastaff000000 000000 c.txt000644 000765 000024 00000000000 14516224307 012764 0ustar00chengxiastaff000000 000000 asdf
+    ./a.txt:asdf
+    ./a.txt:asdf sssdeeee
+    $
+    ```
+    如果带-a选项，会打印二进制文件命中的具体行。 <br/>
 
 
 ## 典型场景 {#典型场景}
@@ -1792,7 +2023,7 @@ $ echo $BASH_VERSINFO
 $
 ```
 
-参考[^fn:23] <br/>
+参考[^fn:27] <br/>
 
 
 ### 读取内容时忽略第一行 {#读取内容时忽略第一行}
@@ -1821,7 +2052,7 @@ $
 ```
 
 原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
-参考[^fn:24]。 <br/>
+参考[^fn:28]。 <br/>
 
 
 ### 同时输出多行 {#同时输出多行}
@@ -1852,30 +2083,34 @@ $
     d line 4
     $
     ```
-    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:25]。 <br/>
+    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:29]。 <br/>
 
-[^fn:1]: [Linux Shell基础 多个命令中的分号(;)、与(&amp;&amp;) 、 或(||)](https://www.cnblogs.com/lizhouwei/p/9991635.html) <br/>
-[^fn:2]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
-[^fn:3]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
-[^fn:4]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
-[^fn:5]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
-[^fn:6]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
-[^fn:7]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
-[^fn:8]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
-[^fn:9]: [How do I get the current Unix time in milliseconds in Bash?](https://serverfault.com/questions/151109/how-do-i-get-the-current-unix-time-in-milliseconds-in-bash) <br/>
-[^fn:10]: [彻底搞明白find命令mtime含义和用法](https://blog.csdn.net/db_murphy/article/details/107053545)  <br/>
-[^fn:11]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
-[^fn:12]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
-[^fn:13]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
-[^fn:14]: [Executing Multiple Commands in Find -exec](https://www.baeldung.com/linux/find-exec-multiple-commands)  <br/>
-[^fn:15]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
-[^fn:16]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
-[^fn:17]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
-[^fn:18]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
-[^fn:19]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
-[^fn:20]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
-[^fn:21]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
-[^fn:22]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
-[^fn:23]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
-[^fn:24]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
-[^fn:25]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
+[^fn:1]: [shell prompt和Carriage Return的关系](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=2#pid1467910)  <br/>
+[^fn:2]: [Linux Shell 13问，单引号和双引号的区别](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=4#pid1511745) <br/>
+[^fn:3]: [Linux Shell基础 多个命令中的分号(;)、与(&amp;&amp;) 、 或(||)](https://www.cnblogs.com/lizhouwei/p/9991635.html) <br/>
+[^fn:4]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
+[^fn:5]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
+[^fn:6]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
+[^fn:7]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
+[^fn:8]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
+[^fn:9]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
+[^fn:10]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
+[^fn:11]: [How do I get the current Unix time in milliseconds in Bash?](https://serverfault.com/questions/151109/how-do-i-get-the-current-unix-time-in-milliseconds-in-bash) <br/>
+[^fn:12]: [彻底搞明白find命令mtime含义和用法](https://blog.csdn.net/db_murphy/article/details/107053545)  <br/>
+[^fn:13]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
+[^fn:14]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
+[^fn:15]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
+[^fn:16]: [Executing Multiple Commands in Find -exec](https://www.baeldung.com/linux/find-exec-multiple-commands)  <br/>
+[^fn:17]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
+[^fn:18]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
+[^fn:19]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
+[^fn:20]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
+[^fn:21]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
+[^fn:22]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
+[^fn:23]: [How to select lines between two marker patterns which may occur multiple times with awk/sed](https://stackoverflow.com/questions/17988756/how-to-select-lines-between-two-marker-patterns-which-may-occur-multiple-times-w) <br/>
+[^fn:24]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
+[^fn:25]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:26]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
+[^fn:27]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
+[^fn:28]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
+[^fn:29]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
