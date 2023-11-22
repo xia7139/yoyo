@@ -75,13 +75,17 @@ draft = false
     - [uniq](#uniq)
         - [场景](#场景)
     - [awk](#awk_command_introduction)
+        - [选项](#选项)
         - [场景](#场景)
             - [输出行中的指定字段](#输出行中的指定字段)
             - [输出文件中的指定行](#输出文件中的指定行)
                 - [行号筛选](#行号筛选)
                 - [根据内容筛选](#根据内容筛选)
+                - [筛选两个字段相同的行](#筛选两个字段相同的行)
             - [输出指定行的指定字段](#输出指定行的指定字段)
-        - [奇怪问题](#奇怪问题)
+            - [输出指定行的指定字段](#输出指定行的指定字段)
+            - [指定字段分隔符](#指定字段分隔符)
+        - [使用记录](#使用记录)
     - [comm](#comm)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -90,6 +94,9 @@ draft = false
         - [场景](#场景)
     - [tee](#tee)
         - [常用选项](#常用选项)
+        - [场景](#场景)
+    - [stat](#stat)
+        - [选项](#选项)
         - [场景](#场景)
     - [grep](#grep)
         - [常用选项](#常用选项)
@@ -1572,6 +1579,17 @@ $
 ### awk {#awk_command_introduction}
 
 
+#### 选项 {#选项}
+
+常用格式如下： <br/>
+
+```text
+awk [ -F fs ] [ -v var=value ] [ 'prog' | -f progfile ] [ file ...  ]
+```
+
+选项 `-F fs` ，指定行分隔符。可以是一个正则表达式。 <br/>
+
+
 #### 场景 {#场景}
 
 
@@ -1759,6 +1777,45 @@ $
     ```
 
 
+###### 筛选两个字段相同的行 {#筛选两个字段相同的行}
+
+语法支持直接写if条件，根据不同字段比对的结果确定是否输出。如下： <br/>
+
+```text
+$ echo "a line 1
+b line 2
+c line c
+d line d" | awk '{if($1==$3)print $0,$1,$2,$3}'
+c line c c line c
+d line d d line d
+
+$ echo "a line 1
+b line 2
+c line c
+d line d" | awk '{if($1!=$3)print $0,$1,$2,$3}'
+a line 1 a line 1
+b line 2 b line 2
+
+$ echo "a line 1
+b line 2
+c line c
+d line d" | awk '{if($1==$3&&$1=="d")print}'
+d line d
+
+$ echo "a line 1
+b line 2
+c line c
+d line d" | awk '{if($1==$3||$1=="a")print $0,$1,$2,$3}'
+a line 1 a line 1
+c line c c line c
+d line d d line d
+$
+```
+
+
+##### 输出指定行的指定字段 {#输出指定行的指定字段}
+
+
 ##### 输出指定行的指定字段 {#输出指定行的指定字段}
 
 输出不包含cat文本行的第一个和第三个字段： <br/>
@@ -1780,7 +1837,73 @@ $
 ```
 
 
-#### 奇怪问题 {#奇怪问题}
+##### 指定字段分隔符 {#指定字段分隔符}
+
+通过-F选项可以指定字段分隔符，字段分隔符可以是一个正则表达式。应该是POSIX规范的。如下： <br/>
+
+```text
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F "-" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4}'
+f0: 2023-11-10 11:03 a 1f1: 2023f2: 11f3: 10 11:03 a 1f4: 
+f0: 2024-12-12 12:06 b 2f1: 2024f2: 12f3: 12 12:06 b 2f4: 
+f0: 1990-08-09 02:09 c 3f1: 1990f2: 08f3: 09 02:09 c 3f4: 
+f0: 2020-09-09 03:06 d 4f1: 2020f2: 09f3: 09 03:06 d 4f4: 
+
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F ":" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4}'
+f0: 2023-11-10 11:03 a 1f1: 2023-11-10 11f2: 03 a 1f3: f4: 
+f0: 2024-12-12 12:06 b 2f1: 2024-12-12 12f2: 06 b 2f3: f4: 
+f0: 1990-08-09 02:09 c 3f1: 1990-08-09 02f2: 09 c 3f3: f4: 
+f0: 2020-09-09 03:06 d 4f1: 2020-09-09 03f2: 06 d 4f3: f4: 
+
+# 指定正则表达式作为分隔符，或
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F ":|-" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4}'
+f0: 2023-11-10 11:03 a 1f1: 2023f2: 11f3: 10 11f4: 03 a 1
+f0: 2024-12-12 12:06 b 2f1: 2024f2: 12f3: 12 12f4: 06 b 2
+f0: 1990-08-09 02:09 c 3f1: 1990f2: 08f3: 09 02f4: 09 c 3
+f0: 2020-09-09 03:06 d 4f1: 2020f2: 09f3: 09 03f4: 06 d 4
+
+# 指定正则表达式作为分隔符，字符范围
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F "[:-]" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4}'
+f0: 2023-11-10 11:03 a 1f1: 2023f2: 11f3: 10 11f4: 03 a 1
+f0: 2024-12-12 12:06 b 2f1: 2024f2: 12f3: 12 12f4: 06 b 2
+f0: 1990-08-09 02:09 c 3f1: 1990f2: 08f3: 09 02f4: 09 c 3
+f0: 2020-09-09 03:06 d 4f1: 2020f2: 09f3: 09 03f4: 06 d 4
+
+# 指定正则表达式作为分隔符，一个或者多个数字作为分隔符，这样，行开始就是一个分隔符，那么s1为空
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F "[0-9]+" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4"f5: "$5"f6: "$6"f7: "$7}'
+f0: 2023-11-10 11:03 a 1f1: f2: -f3: -f4:  f5: :f6:  a f7: 
+f0: 2024-12-12 12:06 b 2f1: f2: -f3: -f4:  f5: :f6:  b f7: 
+f0: 1990-08-09 02:09 c 3f1: f2: -f3: -f4:  f5: :f6:  c f7: 
+f0: 2020-09-09 03:06 d 4f1: f2: -f3: -f4:  f5: :f6:  d f7: 
+
+# 指定正则表达式作为分隔符，一个或者多个数字作为分隔符，这里的正则是POSIX规范
+$ echo "2023-11-10 11:03 a 1
+2024-12-12 12:06 b 2
+1990-08-09 02:09 c 3
+2020-09-09 03:06 d 4" | awk -F "[[:digit:]]+" '{print "f0: "$0"f1: "$1"f2: "$2"f3: "$3"f4: "$4"f5: "$5"f6: "$6"f7: "$7}'
+f0: 2023-11-10 11:03 a 1f1: f2: -f3: -f4:  f5: :f6:  a f7: 
+f0: 2024-12-12 12:06 b 2f1: f2: -f3: -f4:  f5: :f6:  b f7: 
+f0: 1990-08-09 02:09 c 3f1: f2: -f3: -f4:  f5: :f6:  c f7: 
+f0: 2020-09-09 03:06 d 4f1: f2: -f3: -f4:  f5: :f6:  d f7: 
+$
+```
+
+
+#### 使用记录 {#使用记录}
 
 在测试时，如果打印了最后一个字段或者整行，再后面如果再拼接其他字符串，其他字符串会出现在行首，并把前面的内容盖掉。经查，这个文件时windows上生成的行分隔符是\r\n。这样，行的最后，会有个多余的\r，导致后面的内容在前面输出，覆盖掉前面内容。如下： <br/>
 
@@ -1947,6 +2070,97 @@ $ cat log.log
 ls: xxx.txt: No such file or directory
 a.txt
 $ 
+```
+
+
+### stat {#stat}
+
+
+#### 选项 {#选项}
+
+-   -c  --format=FORMAT use the specified FORMAT instead of the default; output a newline after each use of FORMAT <br/>
+    指定输出的格式。 <br/>
+    支持的格式如下： <br/>
+    -   %a, permission bits in octal (note '#' and '0' printf flags) <br/>
+    -   %A, permission bits and file type in human readable form <br/>
+    -   %b, number of blocks allocated (see %B) <br/>
+    -   %B, the size in bytes of each block reported by %b <br/>
+    -   %C, SELinux security context string <br/>
+    -   %d, device number in decimal <br/>
+    -   %D, device number in hex <br/>
+    -   %f, raw mode in hex <br/>
+    -   %F, file type <br/>
+        文件类型 <br/>
+    -   %g, group ID of owner <br/>
+    -   %G, group name of owner <br/>
+    -   %h, number of hard links <br/>
+    -   %i, inode number <br/>
+    -   %m, mount point <br/>
+    -   %n, file name <br/>
+        文件名 <br/>
+    -   %N, quoted file name with dereference if symbolic link <br/>
+    -   %o, optimal I/O transfer size hint <br/>
+    -   %s, total size, in bytes <br/>
+        文件大小，字节数 <br/>
+    -   %t, major device type in hex, for character/block device special files <br/>
+    -   %T, minor device type in hex, for character/block device special files <br/>
+    -   %u, user ID of owner <br/>
+    -   %U, user name of owner <br/>
+    -   %w, time of file birth, human-readable; - if unknown <br/>
+    -   %W, time of file birth, seconds since Epoch; 0 if unknown <br/>
+    -   %x, time of last access, human-readable <br/>
+        atime，最后的访问时间。 <br/>
+    -   %X, time of last access, seconds since Epoch <br/>
+    -   %y, time of last data modification, human-readable <br/>
+        mtime，最后的修改时间 <br/>
+    -   %Y, time of last data modification, seconds since Epoch <br/>
+    -   %z, time of last status change, human-readable <br/>
+        ctime，最后的状态改变时间 <br/>
+    -   %Z, time of last status change, seconds since Epoch <br/>
+
+
+#### 场景 {#场景}
+
+查看文件的mtime、ctime、atime、文件大小(单位字节)、文件类型(目录or普通文件)、文件名： <br/>
+
+```text
+$ stat -c "%y,%z,%x,%s,%F,%n" a.txt 
+2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:46.829929449 +0800,11,regular file,a.txt
+$
+```
+
+有时候，stat后面跟的文件数过多，如果用\*，会提示超过文件数上限，这里可以结合find命令一起使用。示意如下： <br/>
+
+```text
+$ find . -maxdepth 1 -type f
+./.bashrc
+./.bash_logout
+./a.txt
+./.profile
+./.lesshst
+./.sudo_as_admin_successful
+./.bash_history
+
+$ find . -maxdepth 1 -type f -exec stat -c "%y,%z,%x,%s,%F%n" {} \;
+2023-11-11 15:36:34.484586384 +0800,2023-11-11 15:36:34.484586384 +0800,2023-11-12 17:17:17.893104109 +0800,3771,regular file./.bashrc
+2023-11-11 15:36:34.488587287 +0800,2023-11-11 15:36:34.488587287 +0800,2023-11-13 00:17:28.434611338 +0800,220,regular file./.bash_logout
+2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:46.829929449 +0800,11,regular file./a.txt
+2023-11-11 15:36:34.488587287 +0800,2023-11-11 15:36:34.488587287 +0800,2023-11-12 17:17:17.893104109 +0800,807,regular file./.profile
+2023-11-22 23:01:35.615586650 +0800,2023-11-22 23:01:35.615586650 +0800,2023-11-22 23:01:35.611586291 +0800,36,regular file./.lesshst
+2023-11-12 17:18:42.733220090 +0800,2023-11-12 17:18:42.733220090 +0800,2023-11-12 17:18:42.733220090 +0800,0,regular empty file./.sudo_as_admin_successful
+2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,479,regular file./.bash_history
+
+$ find . -maxdepth 1 -type f -exec stat -c "%y,%z,%x,%s,%F%n" {} \; > result.txt
+$ cat result.txt 
+2023-11-11 15:36:34.484586384 +0800,2023-11-11 15:36:34.484586384 +0800,2023-11-12 17:17:17.893104109 +0800,3771,regular file./.bashrc
+2023-11-11 15:36:34.488587287 +0800,2023-11-11 15:36:34.488587287 +0800,2023-11-13 00:17:28.434611338 +0800,220,regular file./.bash_logout
+2023-11-22 23:05:49.876614693 +0800,2023-11-22 23:05:49.876614693 +0800,2023-11-22 23:05:49.860619805 +0800,274,regular file./result.txt
+2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:44.037876231 +0800,2023-11-13 00:03:46.829929449 +0800,11,regular file./a.txt
+2023-11-11 15:36:34.488587287 +0800,2023-11-11 15:36:34.488587287 +0800,2023-11-12 17:17:17.893104109 +0800,807,regular file./.profile
+2023-11-22 23:01:35.615586650 +0800,2023-11-22 23:01:35.615586650 +0800,2023-11-22 23:01:35.611586291 +0800,36,regular file./.lesshst
+2023-11-12 17:18:42.733220090 +0800,2023-11-12 17:18:42.733220090 +0800,2023-11-12 17:18:42.733220090 +0800,0,regular empty file./.sudo_as_admin_successful
+2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,479,regular file./.bash_history
+$
 ```
 
 
