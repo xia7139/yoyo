@@ -98,6 +98,7 @@ draft = false
     - [stat](#stat)
         - [选项](#选项)
         - [场景](#场景)
+    - [mount](#mount)
     - [grep](#grep)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -2129,6 +2130,13 @@ $ stat -c "%y,%z,%x,%s,%F,%n" a.txt
 $
 ```
 
+在macOS上，这个命令的支持不太一样，应该用如下的方式： <br/>
+
+```text
+$ stat -f "mtime: %Sm, ctime:%Sc, atime:%Sa, %HT, %z, %N" -t "%Y-%m-%d %H:%M:%S" f.txt 
+mtime: 2023-11-23 09:35:55, ctime:2023-11-23 09:35:55, atime:2023-11-23 09:35:57, Regular File, 18, f.txt
+```
+
 有时候，stat后面跟的文件数过多，如果用\*，会提示超过文件数上限，这里可以结合find命令一起使用。示意如下： <br/>
 
 ```text
@@ -2162,6 +2170,36 @@ $ cat result.txt
 2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,2023-11-13 00:17:28.442611511 +0800,479,regular file./.bash_history
 $
 ```
+
+
+### mount {#mount}
+
+mount命令不带任何参数执行，可以查看当前挂载情况： <br/>
+
+```text
+$ mount
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+udev on /dev type devtmpfs (rw,nosuid,relatime,size=1944272k,nr_inodes=486068,mode=755,inode64)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
+tmpfs on /run type tmpfs (rw,nosuid,nodev,noexec,relatime,size=396444k,mode=755,inode64)
+/dev/sda3 on / type ext4 (rw,relatime,errors=remount-ro)
+securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev,inode64)
+tmpfs on /run/lock type tmpfs (rw,nosuid,nodev,noexec,relatime,size=5120k,inode64)
+cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot)
+pstore on /sys/fs/pstore type pstore (rw,nosuid,nodev,noexec,relatime)
+bpf on /sys/fs/bpf type bpf (rw,nosuid,nodev,noexec,relatime,mode=700)
+systemd-1 on /proc/sys/fs/binfmt_misc type autofs (rw,relatime,fd=29,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=24624)
+hugetlbfs on /dev/hugepages type hugetlbfs (rw,relatime,pagesize=2M)
+mqueue on /dev/mqueue type mqueue (rw,nosuid,nodev,noexec,relatime)
+debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)
+tracefs on /sys/kernel/tracing type tracefs (rw,nosuid,nodev,noexec,relatime)
+fusectl on /sys/fs/fuse/connections type fusectl (rw,nosuid,nodev,noexec,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+```
+
+可以看到各个卷的挂载选项，可以看到，大部分都是relatime选项。 <br/>
 
 
 ### grep {#grep}
