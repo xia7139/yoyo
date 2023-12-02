@@ -85,6 +85,7 @@ draft = false
                 - [行号筛选](#行号筛选)
                 - [根据内容筛选](#根据内容筛选)
                 - [筛选两个字段相同的行](#筛选两个字段相同的行)
+                - [按照字段预处理文本](#按照字段预处理文本)
             - [输出指定行的指定字段](#输出指定行的指定字段)
             - [输出指定行的指定字段](#输出指定行的指定字段)
             - [指定字段分隔符](#指定字段分隔符)
@@ -107,6 +108,9 @@ draft = false
     - [grep](#grep)
         - [常用选项](#常用选项)
         - [场景](#场景)
+    - [locale](#locale)
+        - [机制说明](#机制说明)
+        - [相关命令](#相关命令)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -1879,6 +1883,47 @@ $
 ```
 
 
+###### 按照字段预处理文本 {#按照字段预处理文本}
+
+如下： <br/>
+
+```text
+$ echo "20231111 apple_2*3
+> 20231112 pear_5*3
+> 20231112 apple_2*3
+> 20231113 pear_1*3
+> 20231113 pear_2*3
+> 20231112 pear_5*3
+> 20231113 banana_3*3" | awk '{if($2 ~/pear/){print $1,"apple"}else if($2 ~/pear/){print $1,"pear"}else{print $1,"other"}}'
+20231111 other
+20231112 apple
+20231112 other
+20231113 apple
+20231113 apple
+20231112 apple
+20231113 other
+$ 
+```
+
+这样，根据第二个字段是否匹配正则，将文本行归到了几类。这样预处理之后，可以进行sort、count的进一步统计。如下： <br/>
+
+```text
+$ echo "20231111 apple_2*3
+20231112 pear_5*3
+20231112 apple_2*3
+20231113 pear_1*3
+20231113 pear_2*3
+20231112 pear_5*3
+20231113 banana_3*3" | awk '{if($2 ~/pear/){print $1,"apple"}else if($2 ~/pear/){print $1,"pear"}else{print $1,"other"}}' | sort | uniq -c
+   1 20231111 other
+   2 20231112 apple
+   1 20231112 other
+   2 20231113 apple
+   1 20231113 other
+$
+```
+
+
 ##### 输出指定行的指定字段 {#输出指定行的指定字段}
 
 
@@ -2330,6 +2375,87 @@ lsof | grep delete
     如果带-a选项，会打印二进制文件命中的具体行。 <br/>
 
 
+### locale {#locale}
+
+参考[^fn:29] <br/>
+
+
+#### 机制说明 {#机制说明}
+
+locale用来设置和显示程序运行的语言环境，它会根据计算机用户所使用的语言，所在国家或地区及当地的文化传统定义一个软件运行时的语言环境。 <br/>
+设置规则如下： <br/>
+
+```text
+<语言>_<地区>.<字符集编码><@修正值>
+```
+
+示例如下： <br/>
+
+```text
+zh_CN.utf8
+zh：表示中文
+CN：表示大陆地区
+Utf8：表示字符集
+
+de_DE.utf-8@euro
+de：表示德语
+DE：表示德国
+Utf-8：表示字符集
+euro：表示按照欧洲习惯加以修正
+```
+
+locale默认文件系/usr/share/i18n/locales，包含一组总共12个LC开头的变量，不包括LANG和LC_ALL，如下： <br/>
+
+```text
+LC_CTYPE：用于字符分类和字符串处理，控制所有字符的处理方式，包括字符编码，字符是单字节还是多字节，如何打印等，非常重要的一个变量。
+LC_NUMERIC：用于格式化非货币的数字显示
+LC_TIME：用于格式化时间和日期
+LC_COLLATE：用于比较和排序
+LC_MONETARY：用于格式化货币单位
+LC_MESSAGES：用于控制程序输出时所使用的语言，主要是提示信息，错误信息，状态信息，标题，标签，按钮和菜单等
+LC_PAPER：默认纸张尺寸大小
+LC_NAME：姓名书写方式
+LC_ADDRESS：地址书写方式
+LC_TELEPHONE：电话号码书写方式
+LC_MEASUREMENT：度量衡表达方式
+LC_IDENTIFICATION：locale对自身包含信息的概述
+```
+
+LANG：LANG的优先级是最低的，它是所有LC_\*变量的默认值，所有以LC_开头变量（LC_ALL除外）中，如果存在没有设置变量值的变量，将会使用LANG的变量值。如果变量有值，则保持不变。 <br/>
+LC_ALL：它不是环境变量，它是一个宏，它可通过该变量的设置覆盖所有LC_\*变量，这个变量设置之后，可以废除LC_\*的设置值，使得这些变量的设置值与LC_ALL的值一致，注意LANG变量不受影响。 <br/>
+这样可以看出优先级： `LC_ALL > LC_* > LANG` 。 <br/>
+
+
+#### 相关命令 {#相关命令}
+
+查看当前locale设置 <br/>
+
+```text
+locale
+```
+
+查看当前系统所有可用locale <br/>
+
+```text
+locale -a
+```
+
+设置locale： <br/>
+
+-   通过命令行执行命令 <br/>
+    ```text
+    localectl set-locale LANG=en_US.UTF-8
+    ```
+    这个我没自己试。 <br/>
+-   修改/etc/profile <br/>
+    在文件末尾增加： <br/>
+    ```text
+    export LC_ALL=zh_CN.utf8
+    export LANG=zh_CN.utf8
+    ```
+    source执行下该配置文件即可生效。 <br/>
+
+
 ## 典型场景 {#典型场景}
 
 
@@ -2358,7 +2484,7 @@ $ echo $BASH_VERSINFO
 $
 ```
 
-参考[^fn:29] <br/>
+参考[^fn:30] <br/>
 
 
 ### 读取内容时忽略第一行 {#读取内容时忽略第一行}
@@ -2387,7 +2513,7 @@ $
 ```
 
 原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
-参考[^fn:30]。 <br/>
+参考[^fn:31]。 <br/>
 
 
 ### 同时输出多行 {#同时输出多行}
@@ -2418,7 +2544,7 @@ $
     d line 4
     $
     ```
-    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:31]。 <br/>
+    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:32]。 <br/>
 
 [^fn:1]: [shell prompt和Carriage Return的关系](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=2#pid1467910)  <br/>
 [^fn:2]: [Linux Shell 13问，单引号和双引号的区别](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=4#pid1511745) <br/>
@@ -2448,6 +2574,7 @@ $
 [^fn:26]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
 [^fn:27]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
 [^fn:28]: [Linux命令详解（15）lsof命令](https://blog.csdn.net/bigwood99/article/details/126834989)  <br/>
-[^fn:29]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
-[^fn:30]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
-[^fn:31]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
+[^fn:29]: [linux下设置locale](https://cloud.tencent.com/developer/article/1671446?from=15425) <br/>
+[^fn:30]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
+[^fn:31]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
+[^fn:32]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
