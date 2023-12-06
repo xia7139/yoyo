@@ -87,8 +87,8 @@ draft = false
                 - [筛选两个字段相同的行](#筛选两个字段相同的行)
                 - [按照字段预处理文本](#按照字段预处理文本)
             - [输出指定行的指定字段](#输出指定行的指定字段)
-            - [输出指定行的指定字段](#输出指定行的指定字段)
             - [指定字段分隔符](#指定字段分隔符)
+            - [输出文件中的匹配行之前的行](#输出文件中的匹配行之前的行)
         - [使用记录](#使用记录)
     - [comm](#comm)
         - [常用选项](#常用选项)
@@ -1926,9 +1926,6 @@ $
 
 ##### 输出指定行的指定字段 {#输出指定行的指定字段}
 
-
-##### 输出指定行的指定字段 {#输出指定行的指定字段}
-
 输出不包含cat文本行的第一个和第三个字段： <br/>
 
 ```bash
@@ -2014,6 +2011,56 @@ $
 ```
 
 
+##### 输出文件中的匹配行之前的行 {#输出文件中的匹配行之前的行}
+
+参考[^fn:25] <br/>
+思路就是将每一行的内容都给到一个变量，匹配行命中时，检测下前面一行是否是不匹配，如果是就打印前面一行和当前匹配行。如下： <br/>
+
+```text
+$ echo "time 12:00
+launch
+time 08:00
+breakfast
+time 20:00
+dinner" | awk '/breakfast/{if(line && line !~ /breakfast/) print line; print}{line=$0}'
+-bash: !~: event not found
+> 
+
+```
+
+这个报错和shell的设置有关系，需要修改设置之后，可以正常执行[^fn:26]。解决方式就是在命令之前执行下 `set +H` 即可，如下： <br/>
+
+```text
+$ set +H
+$ echo "time 12:00
+> launch
+> time 08:00
+> breakfast
+> time 20:00
+> dinner" | awk '/breakfast/{if(line && line !~ /breakfast/) print line; print}{line=$0}'
+time 08:00
+breakfast
+$ set -H
+$ 
+```
+
+如果不想修改这个设置，也可以用如下的方式： <br/>
+
+```text
+$ echo "time 12:00
+> launch
+> time 08:00
+> breakfast
+> time 20:00
+> dinner" | awk '/breakfast/{if(line && ! (line ~ /breakfast/)) print line; print}{line=$0}'
+time 08:00
+breakfast
+$
+```
+
+相当于用了一个逻辑非操作，在叹号后面加了一个空格就避免了这个问题。 <br/>
+
+
 #### 使用记录 {#使用记录}
 
 在测试时，如果打印了最后一个字段或者整行，再后面如果再拼接其他字符串，其他字符串会出现在行首，并把前面的内容盖掉。经查，这个文件时windows上生成的行分隔符是\r\n。这样，行的最后，会有个多余的\r，导致后面的内容在前面输出，覆盖掉前面内容。如下： <br/>
@@ -2058,7 +2105,7 @@ comm [-123i] file1 file2
     在比对时，忽略大小写。 <br/>
 
 实际上comm在不加任何选项时，会把比较的两个中的行处理成三列，第一列是只在file1中有的行，第二列是只在file2中有的行，第三列是两个文件中都有的行。从这个角度，就比较容易理解man page里面的说明了。 <br/>
-参考[^fn:25] <br/>
+参考[^fn:27] <br/>
 
 
 #### 场景 {#场景}
@@ -2110,7 +2157,7 @@ $ comm -1 -3 <(ls tar_test | sort) <(ls hhh_test | sort)
 d.txt
 ```
 
-参考[^fn:26] <br/>
+参考[^fn:28] <br/>
 
 
 ### echo {#echo}
@@ -2121,7 +2168,7 @@ d.txt
 -   -n, 不换行输出 <br/>
     缺省echo会在输出内容最后追加换行，加了-n之后，就原样输出内容，不会再在最后加换行。 <br/>
 -   -e, enable interpretation of backslash escapes <br/>
-    输出转义字符，常用的转义字符有\r、\n等，如下[^fn:27]： <br/>
+    输出转义字符，常用的转义字符有\r、\n等，如下[^fn:29]： <br/>
     -   \a：ALERT / BELL (从系统喇叭送出铃声) <br/>
     -   \b：BACKSPACE ，也就是向左删除键 <br/>
     -   \c：取消行末之换行符号 <br/>
@@ -2320,7 +2367,7 @@ Ctrl+Z实际上是将文件放到后台运行。jobs命令，可以查看当前�
 
 ### lsof {#lsof}
 
-lsof 是 linux 下的一个非常实用的系统级的监控、诊断工具。它是 List Open Files的缩写。使用 lsof，你可以获取任何被打开文件的各种信息，因为 lsof 需要访问核心内存和各种文件，所以必须以 root 用户的身份运行它才能够充分地发挥其功能[^fn:28]。 <br/>
+lsof 是 linux 下的一个非常实用的系统级的监控、诊断工具。它是 List Open Files的缩写。使用 lsof，你可以获取任何被打开文件的各种信息，因为 lsof 需要访问核心内存和各种文件，所以必须以 root 用户的身份运行它才能够充分地发挥其功能[^fn:30]。 <br/>
 linux中，有时候，删除文件之后，磁盘空间并未释放。这是因为有文件占用，需要查看占用删除文件的进程，然后，关掉或者重启这个进程，磁盘空间就会被释放。执行如下命令，查找占用文件的进程： <br/>
 
 ```text
@@ -2377,7 +2424,7 @@ lsof | grep delete
 
 ### locale {#locale}
 
-参考[^fn:29] <br/>
+参考[^fn:31] <br/>
 
 
 #### 机制说明 {#机制说明}
@@ -2484,7 +2531,7 @@ $ echo $BASH_VERSINFO
 $
 ```
 
-参考[^fn:30] <br/>
+参考[^fn:32] <br/>
 
 
 ### 读取内容时忽略第一行 {#读取内容时忽略第一行}
@@ -2513,7 +2560,7 @@ $
 ```
 
 原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
-参考[^fn:31]。 <br/>
+参考[^fn:33]。 <br/>
 
 
 ### 同时输出多行 {#同时输出多行}
@@ -2544,7 +2591,7 @@ $
     d line 4
     $
     ```
-    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:32]。 <br/>
+    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:34]。 <br/>
 
 [^fn:1]: [shell prompt和Carriage Return的关系](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=2#pid1467910)  <br/>
 [^fn:2]: [Linux Shell 13问，单引号和双引号的区别](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=4#pid1511745) <br/>
@@ -2570,11 +2617,13 @@ $
 [^fn:22]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
 [^fn:23]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
 [^fn:24]: [How to select lines between two marker patterns which may occur multiple times with awk/sed](https://stackoverflow.com/questions/17988756/how-to-select-lines-between-two-marker-patterns-which-may-occur-multiple-times-w) <br/>
-[^fn:25]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
-[^fn:26]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
-[^fn:27]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
-[^fn:28]: [Linux命令详解（15）lsof命令](https://blog.csdn.net/bigwood99/article/details/126834989)  <br/>
-[^fn:29]: [linux下设置locale](https://cloud.tencent.com/developer/article/1671446?from=15425) <br/>
-[^fn:30]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
-[^fn:31]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
-[^fn:32]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
+[^fn:25]: [awk print matching line and line before the matched](https://stackoverflow.com/questions/4891383/awk-print-matching-line-and-line-before-the-matched)  <br/>
+[^fn:26]: [What is "-bash: !": event not found"](https://serverfault.com/questions/208265/what-is-bash-event-not-found) <br/>
+[^fn:27]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
+[^fn:28]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:29]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
+[^fn:30]: [Linux命令详解（15）lsof命令](https://blog.csdn.net/bigwood99/article/details/126834989)  <br/>
+[^fn:31]: [linux下设置locale](https://cloud.tencent.com/developer/article/1671446?from=15425) <br/>
+[^fn:32]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
+[^fn:33]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
+[^fn:34]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
