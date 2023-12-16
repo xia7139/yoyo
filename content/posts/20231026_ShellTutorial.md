@@ -95,6 +95,9 @@ draft = false
             - [指定字段分隔符](#指定字段分隔符)
             - [输出文件中的匹配行之前的行](#输出文件中的匹配行之前的行)
         - [使用记录](#使用记录)
+            - [换行符导致的奇怪现象](#换行符导致的奇怪现象)
+            - [过滤得到指定线程的全部日志](#过滤得到指定线程的全部日志)
+            - [过滤指定报错对应线程的全部日志](#过滤指定报错对应线程的全部日志)
     - [comm](#comm)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -116,6 +119,7 @@ draft = false
     - [locale](#locale)
         - [机制说明](#机制说明)
         - [相关命令](#相关命令)
+    - [crontab](#crontab)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -2231,6 +2235,9 @@ $
 
 #### 使用记录 {#使用记录}
 
+
+##### 换行符导致的奇怪现象 {#换行符导致的奇怪现象}
+
 在测试时，如果打印了最后一个字段或者整行，再后面如果再拼接其他字符串，其他字符串会出现在行首，并把前面的内容盖掉。经查，这个文件时windows上生成的行分隔符是\r\n。这样，行的最后，会有个多余的\r，导致后面的内容在前面输出，覆盖掉前面内容。如下： <br/>
 
 ```bash
@@ -2250,6 +2257,314 @@ line 2,xx
 line 3,xx
 $
 ```
+
+
+##### 过滤得到指定线程的全部日志 {#过滤得到指定线程的全部日志}
+
+日志文件样例如下： <br/>
+
+```text
+$ cat sample2.log 
+2023-12-11 15:09:33,987 thread323 INFO com.test.Test Time is 15:09
+2023-12-11 15:09:33,988 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 15:09:35,97 thread322 DEBUG com.test.Test Time is 15:09
+2023-12-11 15:09:36,97 thread322 DEBUG com.test.Test Time is 15:09
+2023-12-11 15:10:33,987 thread323 INFO com.test.Test Time is 15:10
+2023-12-11 15:10:35,97 thread322 INFO com.test.Test Time is 15:10
+asdf
+this is 322
+2023-12-11 15:12:35,97 thread325 INFO com.test.Test Time is 15:12
+2023-12-11 15:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 3
+Nullpointer Exception
+-end-
+
+2023-12-11 16:09:33,987 thread325 INFO com.test.Test Time is 16:09
+2023-12-11 16:09:35,97 thread322 DEBUG com.test.Test Time is 16:09
+2023-12-11 16:10:33,987 thread323 INFO com.test.Test Time is 16:10
+2023-12-11 16:10:35,97 thread322 INFO com.test.Test Time is 16:10
+2023-12-11 16:12:35,97 thread325 INFO com.test.Test Time is 16:12
+2023-12-11 16:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 5 
+Nullpointer Exception
+-end-
+
+2023-12-11 17:09:33,987 thread323 INFO com.test.Test Time is 17:09
+2023-12-11 17:09:35,97 thread322 DEBUG com.test.Test Time is 17:09
+qwqeououeo
+asdfalj
+2023-12-11 17:09:36,97 thread322 DEBUG com.test.Test Time is 17:09
+2023-12-11 17:10:33,987 thread323 INFO com.test.Test Time is 17:10
+2023-12-11 17:10:33,878 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 17:10:35,97 thread322 INFO com.test.Test Time is 17:10
+2023-12-11 17:12:35,97 thread325 INFO com.test.Test Time is 17:12
+2023-12-11 17:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 7 
+Nullpointer Exception
+-end-
+
+2023-12-11 18:09:33,987 thread325 INFO com.test.Test Time is 18:09
+2023-12-11 18:09:35,97 thread322 DEBUG com.test.Test Time is 18:09
+2023-12-11 18:10:33,987 thread323 INFO com.test.Test Time is 18:10
+2023-12-11 18:10:35,97 thread322 INFO com.test.Test Time is 18:10
+2023-12-11 18:12:35,97 thread325 INFO com.test.Test Time is 18:12
+2023-12-11 18:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 9 
+Nullpointer Exception
+-end-
+
+$ 
+```
+
+如果想得到某个线程的全部日志，可以采用如下脚本，filter_log_threadid.awk： <br/>
+
+```text
+BEGIN{
+	# 标识当前是否是目标日志的一部分
+	found_flag = 0
+	# 从命令行参数中拿到线程标识
+	threadid_pattern = ARGV[1];
+	# 拿到之后，将其置空，避免被当成文件名
+	ARGV[1] = "";
+}
+{
+	# 如果当前行不是一条独立的log entry，就判断它是否输入目标threadid的输出
+	if($0 !~ / thread[0-9]+ /)
+	{
+		if(found_flag == 1){
+			print $0
+		}
+	}else{
+		found_flag = 0
+	}
+	# 报错标识，找到报错标识匹配的行
+	if($0 ~ threadid_pattern)
+	{
+		print $0
+		found_flag = 1
+	}
+}
+```
+
+运行效果如下： <br/>
+
+```text
+$ awk -f filter_log_threadid.awk thread322 sample2.log 
+2023-12-11 15:09:35,97 thread322 DEBUG com.test.Test Time is 15:09
+2023-12-11 15:09:36,97 thread322 DEBUG com.test.Test Time is 15:09
+2023-12-11 15:10:35,97 thread322 INFO com.test.Test Time is 15:10
+asdf
+this is 322
+2023-12-11 16:09:35,97 thread322 DEBUG com.test.Test Time is 16:09
+2023-12-11 16:10:35,97 thread322 INFO com.test.Test Time is 16:10
+2023-12-11 17:09:35,97 thread322 DEBUG com.test.Test Time is 17:09
+qwqeououeo
+asdfalj
+2023-12-11 17:09:36,97 thread322 DEBUG com.test.Test Time is 17:09
+2023-12-11 17:10:35,97 thread322 INFO com.test.Test Time is 17:10
+2023-12-11 18:09:35,97 thread322 DEBUG com.test.Test Time is 18:09
+2023-12-11 18:10:35,97 thread322 INFO com.test.Test Time is 18:10
+$ awk -f filter_log_threadid.awk thread325 sample2.log 
+2023-12-11 15:12:35,97 thread325 INFO com.test.Test Time is 15:12
+2023-12-11 16:09:33,987 thread325 INFO com.test.Test Time is 16:09
+2023-12-11 16:12:35,97 thread325 INFO com.test.Test Time is 16:12
+2023-12-11 16:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 5 
+Nullpointer Exception
+-end-
+
+2023-12-11 17:12:35,97 thread325 INFO com.test.Test Time is 17:12
+2023-12-11 18:09:33,987 thread325 INFO com.test.Test Time is 18:09
+2023-12-11 18:12:35,97 thread325 INFO com.test.Test Time is 18:12
+2023-12-11 18:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 9 
+Nullpointer Exception
+-end-
+
+$
+```
+
+从这个例子中，可以看到awk脚本的语法，还是很有特色的，可以通过简单的逻辑控制，过滤出想要的内容，非常方便。 <br/>
+
+
+##### 过滤指定报错对应线程的全部日志 {#过滤指定报错对应线程的全部日志}
+
+假设有如下日志文件： <br/>
+
+```text
+$ cat sample.log 
+2023-12-11 15:09:33,987 thread323 INFO com.test.Test Time is 15:09
+2023-12-11 15:09:33,988 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 15:09:35,97 thread322 DEBUG com.test.Test Time is 15:09
+2023-12-11 15:10:33,987 thread323 INFO com.test.Test Time is 15:10
+2023-12-11 15:10:35,97 thread322 INFO com.test.Test Time is 15:10
+2023-12-11 15:12:35,97 thread325 INFO com.test.Test Time is 15:12
+2023-12-11 15:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 3
+Nullpointer Exception
+-end-
+
+2023-12-11 16:09:33,987 thread325 INFO com.test.Test Time is 16:09
+2023-12-11 16:09:35,97 thread322 DEBUG com.test.Test Time is 16:09
+2023-12-11 16:10:33,987 thread323 INFO com.test.Test Time is 16:10
+2023-12-11 16:10:35,97 thread322 INFO com.test.Test Time is 16:10
+2023-12-11 16:12:35,97 thread325 INFO com.test.Test Time is 16:12
+2023-12-11 16:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 5 
+Nullpointer Exception
+-end-
+
+2023-12-11 17:09:33,987 thread323 INFO com.test.Test Time is 17:09
+2023-12-11 17:09:35,97 thread322 DEBUG com.test.Test Time is 17:09
+2023-12-11 17:10:33,987 thread323 INFO com.test.Test Time is 17:10
+2023-12-11 17:10:33,878 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 17:10:35,97 thread322 INFO com.test.Test Time is 17:10
+2023-12-11 17:12:35,97 thread325 INFO com.test.Test Time is 17:12
+2023-12-11 17:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 7 
+Nullpointer Exception
+-end-
+
+2023-12-11 18:09:33,987 thread325 INFO com.test.Test Time is 18:09
+2023-12-11 18:09:35,97 thread322 DEBUG com.test.Test Time is 18:09
+2023-12-11 18:10:33,987 thread323 INFO com.test.Test Time is 18:10
+2023-12-11 18:10:35,97 thread322 INFO com.test.Test Time is 18:10
+2023-12-11 18:12:35,97 thread325 INFO com.test.Test Time is 18:12
+2023-12-11 18:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 9 
+Nullpointer Exception
+-end-
+
+$ 
+```
+
+其中，我们想要过滤出 `error occur in the class` 这个报错对应线程的全部日志。可以通过如下awk脚本实现，filter_log.awk： <br/>
+
+```text
+BEGIN{
+	i = 1
+	# 从命令行参数中拿到要识别的报错模式
+	error_pattern = ARGV[1];
+	# 拿到之后，将其置空，避免被当成文件名
+	ARGV[1] = "";
+}
+{
+	lines[i]=$0
+	# 报错标识，找到报错标识匹配的行
+	if($0 ~ error_pattern)
+	{
+		line_before = lines[i-1]
+		# 拿到报错标识前一行的线程号作为行筛选标识
+		match(line_before,/ thread[0-9]+ /);
+		line_mark = substr(line_before, RSTART, RLENGTH)
+		# print "line_mark: " line_mark
+		# 打印在当前报错行之前，所有该线程号的日志，包括多行的情况
+		for(j=1; j<i;j++)
+			if(match(lines[j],line_mark) !=0) {
+				# 这个标识用于控制打印报错段的跨行内容
+				found_flag = 1
+				# 打印该行输出，包括跨行的内容
+				print lines[j]
+				while(lines[j+1] !~ / thread[0-9]+ / && j+1 <i){
+					print lines[j+1]
+					j=j+1
+				}
+			}
+		# 打印当前报错行
+		print $0
+		i=0
+	}
+	# 打印当前报错行之后的连续行(报错行到报错结束标识，这里的报错行标识是一个空行)
+	if($0 ~ /^$/ && found_flag == 1)
+	{
+		for(j=1;j<=i;j++)
+			print lines[j]
+		found_flag=0
+	}
+	i=i+1
+}
+```
+
+运行效果如下： <br/>
+
+```text
+$ awk -f filter_log.awk 'error occur in the class' sample.log 
+2023-12-11 15:09:33,987 thread323 INFO com.test.Test Time is 15:09
+2023-12-11 15:09:33,988 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 15:10:33,987 thread323 INFO com.test.Test Time is 15:10
+2023-12-11 15:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 3
+Nullpointer Exception
+-end-
+
+2023-12-11 16:10:33,987 thread323 INFO com.test.Test Time is 16:10
+2023-12-11 17:09:33,987 thread323 INFO com.test.Test Time is 17:09
+2023-12-11 17:10:33,987 thread323 INFO com.test.Test Time is 17:10
+2023-12-11 17:10:33,878 thread323 INFO com.test.Test:
+thread is going on...
+haha
+thread is going on...
+2023-12-11 17:15:35,97 thread323 INFO com.test.Test :
+error occur in the class
+com.test.Test : line 7 
+Nullpointer Exception
+-end-
+
+$ 
+```
+
+换一个报错标识，也可以正常运行： <br/>
+
+```text
+$ awk -f filter_log.awk 'vital exception occur in the class' sample.log 
+2023-12-11 15:12:35,97 thread325 INFO com.test.Test Time is 15:12
+2023-12-11 16:09:33,987 thread325 INFO com.test.Test Time is 16:09
+2023-12-11 16:12:35,97 thread325 INFO com.test.Test Time is 16:12
+2023-12-11 16:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 5 
+Nullpointer Exception
+-end-
+
+2023-12-11 17:12:35,97 thread325 INFO com.test.Test Time is 17:12
+2023-12-11 18:09:33,987 thread325 INFO com.test.Test Time is 18:09
+2023-12-11 18:12:35,97 thread325 INFO com.test.Test Time is 18:12
+2023-12-11 18:15:35,97 thread325 INFO com.test.Test :
+vital exception occur in the class
+com.test.Test : line 9 
+Nullpointer Exception
+-end-
+
+$
+```
+
+从这个例子中，可以看到awk写这种脚本的基本结构、以及如何从命令行接收参数等。学会了这些基本的东西，是掌握这个强大工具的开始。 <br/>
 
 
 ### comm {#comm}
@@ -2669,6 +2984,11 @@ locale -a
     export LANG=zh_CN.utf8
     ```
     source执行下该配置文件即可生效。 <br/>
+
+
+### crontab {#crontab}
+
+有一次，配置crontab之后，发现会重复执行，检查了下，原来在多个用户下，都有同一个crontab命令配置。这样，每个用户下都会执行，导致重复执行。 <br/>
 
 
 ## 典型场景 {#典型场景}
