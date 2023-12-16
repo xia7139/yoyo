@@ -98,6 +98,7 @@ draft = false
             - [换行符导致的奇怪现象](#换行符导致的奇怪现象)
             - [过滤得到指定线程的全部日志](#过滤得到指定线程的全部日志)
             - [过滤指定报错对应线程的全部日志](#过滤指定报错对应线程的全部日志)
+            - [分隔字段并去掉其中的部分](#分隔字段并去掉其中的部分)
     - [comm](#comm)
         - [常用选项](#常用选项)
         - [场景](#场景)
@@ -2565,6 +2566,87 @@ $
 ```
 
 从这个例子中，可以看到awk写这种脚本的基本结构、以及如何从命令行接收参数等。学会了这些基本的东西，是掌握这个强大工具的开始。 <br/>
+
+
+##### 分隔字段并去掉其中的部分 {#分隔字段并去掉其中的部分}
+
+有如下测试文本，记录的是一些比赛数据，test_split.txt： <br/>
+
+```text
+2023-12-11 sunny 10:00_LakersVSSpurs_89:103|07:00_76sVSRockets_88:76|10:30_HenanVSTianjin_100:33
+2023-12-12 windy 11:00_NuggetsVSShanghai_153:103|06:00_XinjiangVSZhejiang_99:101
+2023-12-13 cloudy 12:00_GuangdongVSShenzhen_100:93|07:00_LiaoningVSFujian_99:76|09:30_ShandongVSHunan_100:88
+```
+
+下面要将这写数据中，上午6点或者7点的比赛去掉，并按照比赛时间排序后，重新打印。 <br/>
+程序如下，split.awk： <br/>
+
+```text
+{
+	split($3, game_list, "|")
+	for(i in game_list){
+		# printf("%d %s\n", i, game_list[i])
+		if(match(game_list[i], /^07:00|^06:00/)){
+			# print game_list[i] " match."
+			delete game_list[i]
+		}
+	}
+
+	len = tidy_arr(game_list)
+	#print "len " len
+	#print "length " length(game_list)
+	isort(game_list, len)
+	remain = ""
+	for(i = 1; i <= length(game_list); i++){
+		remain = remain game_list[i] "|"
+	}
+	print "old: " $1 " " $2 " " $3
+	print "new: " $1 " " $2 " " substr(remain, 1, length(remain) - 1)
+}
+# isort - sort A[1..n] by insertion. only function param can be local, so there is so many param in this funtion.
+function isort(A,n,i,j,t){
+	for(i = 2; i <= n; i++)
+		for(j=i; j > 1 && A[j-1] > A[j]; j--){
+			# swap A[j-1] and A[j]
+			t = A[j-1]; A[j-1] = A[j]; A[j] = t
+		}
+}
+
+# tidy_arr - tidy the array into index start by 1 and in a row, returning the length. only function param can be local, so there is so many param in this funtion.
+function tidy_arr(A, i , tmpA){
+	i = 1
+	for(k in A){
+		tmpA[i] = A[k]
+		delete A[k]
+		i = i + 1
+	}
+	i = 1
+	for(k in tmpA){
+		A[i] = tmpA[k]
+		i = i + 1
+	}
+	return i - 1
+}
+```
+
+运行效果如下： <br/>
+
+```text
+$ cat test_split.txt 
+2023-12-11 sunny 10:00_LakersVSSpurs_89:103|07:00_76sVSRockets_88:76|10:30_HenanVSTianjin_100:33
+2023-12-12 windy 11:00_NuggetsVSShanghai_153:103|06:00_XinjiangVSZhejiang_99:101
+2023-12-13 cloudy 12:00_GuangdongVSShenzhen_100:93|07:00_LiaoningVSFujian_99:76|09:30_ShandongVSHunan_100:88
+$ awk -f split.awk test_split.txt 
+old: 2023-12-11 sunny 10:00_LakersVSSpurs_89:103|07:00_76sVSRockets_88:76|10:30_HenanVSTianjin_100:33
+new: 2023-12-11 sunny 10:00_LakersVSSpurs_89:103|10:30_HenanVSTianjin_100:33
+old: 2023-12-12 windy 11:00_NuggetsVSShanghai_153:103|06:00_XinjiangVSZhejiang_99:101
+new: 2023-12-12 windy 11:00_NuggetsVSShanghai_153:103
+old: 2023-12-13 cloudy 12:00_GuangdongVSShenzhen_100:93|07:00_LiaoningVSFujian_99:76|09:30_ShandongVSHunan_100:88
+new: 2023-12-13 cloudy 09:30_ShandongVSHunan_100:88|12:00_GuangdongVSShenzhen_100:93
+$ 
+```
+
+搞定，这个里面有数组、排序、数组整理等相关内容，是一个很好的开始。 <br/>
 
 
 ### comm {#comm}
