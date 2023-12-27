@@ -32,6 +32,7 @@ draft = false
         - [and](#and)
         - [取反](#取反)
     - [文件和目录是否存在](#文件和目录是否存在)
+    - [判断目录是否为空](#判断目录是否为空)
 - [循环](#循环)
     - [while](#while)
     - [for](#for)
@@ -126,6 +127,7 @@ draft = false
     - [获取bash的版本](#获取bash的版本)
     - [读取内容时忽略第一行](#读取内容时忽略第一行)
     - [同时输出多行](#同时输出多行)
+    - [遍历目录中的全部文件](#遍历目录中的全部文件)
 
 </div>
 <!--endtoc-->
@@ -743,6 +745,32 @@ fi
 ```
 
 
+### 判断目录是否为空 {#判断目录是否为空}
+
+判断目录是否为空，可以用如下语法片段： <br/>
+
+```bash
+dir="/path/to/directory"
+if [ -z "$(ls -A $dir)" ]; then
+    echo "目录为空"
+else
+    echo "目录非空"
+fi
+```
+
+需要注意的是，如果dir变量的值中，有 `~` 符号，就不能在外面加引号，单引号和双引号都不行。原因在于，引号会阻止 `~` 符号的展开。如下： <br/>
+
+```text
+$ ls '~/temp/empty_dir/'
+ls: ~/temp/empty_dir/: No such file or directory
+$ ls "~/temp/empty_dir/"
+ls: ~/temp/empty_dir/: No such file or directory
+$ ls ~/temp/empty_dir/
+a.txt
+$
+```
+
+
 ## 循环 {#循环}
 
 
@@ -829,6 +857,8 @@ hostname -i
     以块为单位列出文件占用的大小。 <br/>
 -   -R, Recursively list subdirectories encountered. <br/>
     依次递归遍历全部子目录。 <br/>
+-   -A, Include directory entries whose names begin with a dot (‘.’) except for . and ...  Automatically set for the super-user unless -I is specified. <br/>
+    显示.开头的文件，但是不显示.和..这两个目录。 <br/>
 
 
 #### 查看占用文件块的大小 {#查看占用文件块的大小}
@@ -3162,6 +3192,49 @@ $
     $
     ```
     其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:39]。 <br/>
+
+
+### 遍历目录中的全部文件 {#遍历目录中的全部文件}
+
+如下： <br/>
+
+```text
+$ cat file/getFileListOfDirRecursive.sh 
+function getFileListOfDir(){
+	echo "now dir: $1"
+	# 判断目录是否为空
+	if [ -z "$(ls -A $1)" ]; then
+		# 目录为空，结束该函数执行
+		return 0
+	fi
+
+	# 如果$1指定的目录为空，其中没有文件，会都到如下循环体if判断中的else分支，无限递归，因此需要加前面的目录为空判断
+	for file in $1/*
+	do
+		if test -f $file
+		then
+			echo "now file: $file"
+		else
+			getFileListOfDir $file
+		fi
+	done
+}
+# 接收脚本的第一个参数作为指定目录
+getFileListOfDir $1
+$ sh file/getFileListOfDirRecursive.sh .
+now dir: .
+now file: ./20231026_ShellTutorial.html
+now file: ./20231026_ShellTutorial.html~
+now file: ./20231026_ShellTutorial.org
+now file: ./20231026_ShellTutorial.org~
+now dir: ./adsf
+now dir: ./file
+now file: ./file/getFileListOfDirRecursive.sh
+now file: ./getFileListOfDirRecursive.sh
+now dir: ./img
+now file: ./img/01_RegexCompare.png
+$
+```
 
 [^fn:1]: [shell prompt和Carriage Return的关系](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=2#pid1467910)  <br/>
 [^fn:2]: [Linux Shell 13问，单引号和双引号的区别](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=4#pid1511745) <br/>
