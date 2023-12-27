@@ -122,6 +122,11 @@ draft = false
         - [机制说明](#机制说明)
         - [相关命令](#相关命令)
     - [crontab](#crontab)
+    - [file](#file)
+        - [常用选项](#常用选项)
+        - [场景](#场景)
+            - [查看文件的编码类型](#查看文件的编码类型)
+    - [xxd](#xxd)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -3101,6 +3106,73 @@ locale -a
 ### crontab {#crontab}
 
 有一次，配置crontab之后，发现会重复执行，检查了下，原来在多个用户下，都有同一个crontab命令配置。这样，每个用户下都会执行，导致重复执行。 <br/>
+
+
+### file {#file}
+
+这个命令可以用来查看文件的类型和编码，但实际用的时候，发现这个命令不能正确识别gb2312、gbk、gb18030等这些汉字编码。实际上，对于有BOM的文件(比如UTF-16BE、UTF-16LE等)，可以直接识别出他的编码，对于其他的文件，只能猜，可能需要用统计学的理论进行辅助判断。 <br/>
+
+
+#### 常用选项 {#常用选项}
+
+-   -i, <br/>
+    macos上这个选项是指定如果是普通文件，不区分具体类型；Ubuntu上的意思是打印文件的MIME(文件类型和编码)。在macos上如果要查看文件的具体类型和编码，需要指定 `-I` 选项。 <br/>
+
+
+#### 场景 {#场景}
+
+
+##### 查看文件的编码类型 {#查看文件的编码类型}
+
+macos： <br/>
+
+```text
+$ cat a.txt 
+阿斯顿发垃圾
+$ file a.txt 
+a.txt: Unicode text, UTF-8 text
+$ file -i a.txt 
+a.txt: regular file
+$ file -I a.txt 
+a.txt: text/plain; charset=utf-8
+$
+```
+
+Ubuntu: <br/>
+
+```text
+$ cat a.txt 
+a燊b
+$ file a.txt 
+a.txt: Unicode text, UTF-8 text
+$ file -i a.txt 
+a.txt: text/plain; charset=utf-8
+$ file -I a.txt 
+file: invalid option -- 'I'
+Usage: file [-bcCdEhikLlNnprsSvzZ0] [--apple] [--extension] [--mime-encoding]
+	    [--mime-type] [-e <testname>] [-F <separator>]  [-f <namefile>]
+	    [-m <magicfiles>] [-P <parameter=value>] [--exclude-quiet]
+	    <file> ...
+       file -C [-m <magicfiles>]
+       file [--help]
+$
+```
+
+
+### xxd {#xxd}
+
+用于查看文本文件的16进制格式。 <br/>
+
+```text
+$ cat a.txt 
+aa阿斯顿发垃圾xx
+$ xxd a.txt 
+00000000: 6161 e998 bfe6 96af e9a1 bfe5 8f91 e59e  aa..............
+00000010: 83e5 9cbe 7878 0a                        ....xx.
+$
+```
+
+从这里可以看出，文件中的中文都是用"."来取代的，不展示中文内容。 <br/>
 
 
 ## 典型场景 {#典型场景}
