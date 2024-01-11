@@ -60,6 +60,7 @@ draft = false
         - [find命令对查找出的文件执行操作](#find命令对查找出的文件执行操作)
             - [执行单个多个操作](#执行单个多个操作)
             - [执行多个多个操作](#执行多个多个操作)
+        - [find命令按照字母序查找，查找文件名小于某个字符串的文件](#find命令按照字母序查找-查找文件名小于某个字符串的文件)
     - [tar](#tar)
         - [常用选项说明](#常用选项说明)
         - [打包](#打包)
@@ -127,6 +128,9 @@ draft = false
         - [场景](#场景)
             - [查看文件的编码类型](#查看文件的编码类型)
     - [xxd](#xxd)
+    - [test](#test)
+        - [说明](#说明)
+        - [场景](#场景)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -1281,6 +1285,28 @@ $
 ```
 
 参考[^fn:22] <br/>
+
+
+#### find命令按照字母序查找，查找文件名小于某个字符串的文件 {#find命令按照字母序查找-查找文件名小于某个字符串的文件}
+
+```text
+$ find . -name "*.txt" -exec echo {} \;
+./inner/x.txt
+./inner/y.txt
+./exclude/m.txt
+./exclude/n.txt
+./b.txt
+./a.txt
+$ find . -name "*.txt" -exec test "{}" \< "./e.txt" \; -print
+./b.txt
+./a.txt
+$ find . -name "*.txt" -exec test "{}" \> "./e.txt" \; -print
+./inner/x.txt
+./inner/y.txt
+./exclude/m.txt
+./exclude/n.txt
+$ 
+```
 
 
 ### tar {#tar}
@@ -3173,6 +3199,111 @@ $
 ```
 
 从这里可以看出，文件中的中文都是用"."来取代的，不展示中文内容。 <br/>
+
+
+### test {#test}
+
+
+#### 说明 {#说明}
+
+macOS上的man page说明： <br/>
+
+```text
+The test utility evaluates the expression and, if it evaluates to true, returns a zero (true) exit status; otherwise it returns 1 (false).  If there is no expression, test also returns 1 (false).
+```
+
+test用来检测表达式真假，如果为真返回0，如果为假或者没有表达式返回0。可以通过 `$?` 来查看test命令的返回值。 <br/>
+macOS上的man page支持如下表达式： <br/>
+
+```text
+The following primaries are used to construct expression:
+     -b file       True if file exists and is a block special file.
+     -c file       True if file exists and is a character special file.
+     -d file       True if file exists and is a directory.
+     -e file       True if file exists (regardless of type).
+     -f file       True if file exists and is a regular file.
+     -g file       True if file exists and its set group ID flag is set.
+     -h file       True if file exists and is a symbolic link.  This operator is retained for compatibility with previous versions of this program.  Do not rely on its existence; use -L instead.
+     -k file       True if file exists and its sticky bit is set.
+     -n string     True if the length of string is nonzero.
+     -p file       True if file is a named pipe (FIFO).
+     -r file       True if file exists and is readable.
+     -s file       True if file exists and has a size greater than zero.
+     -t file_descriptor
+		   True if the file whose file descriptor number is file_descriptor is open and is associated with a terminal.
+     -u file       True if file exists and its set user ID flag is set.
+     -w file       True if file exists and is writable.  True indicates only that the write flag is on.  The file is not writable on a read-only file system even if this test indicates true.
+     -x file       True if file exists and is executable.  True indicates only that the execute flag is on.  If file is a directory, true indicates that file can be searched.
+     -z string     True if the length of string is zero.
+     -L file       True if file exists and is a symbolic link.
+     -O file       True if file exists and its owner matches the effective user id of this process.
+     -G file       True if file exists and its group matches the effective group id of this process.
+     -S file       True if file exists and is a socket.
+     file1 -nt file2
+		   True if file1 exists and is newer than file2.
+     file1 -ot file2
+		   True if file1 exists and is older than file2.
+     file1 -ef file2
+		   True if file1 and file2 exist and refer to the same file.
+     string        True if string is not the null string.
+     s1 = s2       True if the strings s1 and s2 are identical.
+     s1 != s2      True if the strings s1 and s2 are not identical.
+     s1 < s2       True if string s1 comes before s2 based on the binary value of their characters.
+     s1 > s2       True if string s1 comes after s2 based on the binary value of their characters.
+     n1 -eq n2     True if the integers n1 and n2 are algebraically equal.
+     n1 -ne n2     True if the integers n1 and n2 are not algebraically equal.
+     n1 -gt n2     True if the integer n1 is algebraically greater than the integer n2.
+     n1 -ge n2     True if the integer n1 is algebraically greater than or equal to the integer n2.
+     n1 -lt n2     True if the integer n1 is algebraically less than the integer n2.
+     n1 -le n2     True if the integer n1 is algebraically less than or equal to the integer n2.
+     If file is a symbolic link, test will fully dereference it and then evaluate the expression against the file referenced, except for the -h and -L primaries.
+     These primaries can be combined with the following operators:
+     ! expression  True if expression is false.
+     expression1 -a expression2
+		   True if both expression1 and expression2 are true.
+     expression1 -o expression2
+		   True if either expression1 or expression2 are true.
+     ( expression )
+		   True if expression is true.
+     The -a operator has higher precedence than the -o operator.
+     Some shells may provide a builtin test command which is similar or identical to this utility. 
+```
+
+
+#### 场景 {#场景}
+
+比较两个字符串的大小： <br/>
+
+```text
+$ test "asdf" \= "asdf"
+$ echo $?
+0
+$ test "asdf" = "asdf"
+$ echo $?
+0
+$ test "asdf" = "qwer"
+$ echo $?
+1
+$ test "asdf" \> "qwer"
+$ echo $?
+1
+$ test "asdf" \< "qwer"
+$ echo $?
+0
+$
+```
+
+注意，如下方式是不行的： <br/>
+
+```text
+$ test "asdf > qwer"
+$ echo $?
+0
+$ test "asdf \> qwer"
+$ echo $?
+0
+$
+```
 
 
 ## 典型场景 {#典型场景}
