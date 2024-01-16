@@ -131,6 +131,10 @@ draft = false
     - [test](#test)
         - [说明](#说明)
         - [场景](#场景)
+    - [gzip和gunzip](#gzip和gunzip)
+    - [curl](#curl)
+        - [常用选项](#常用选项)
+        - [典型场景](#典型场景)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -3304,6 +3308,77 @@ $ echo $?
 0
 $
 ```
+
+
+### gzip和gunzip {#gzip和gunzip}
+
+压缩和解压缩的使用很简单，如下： <br/>
+
+```text
+$ ls a.foo*
+a.foo
+$ cat a.foo 
+asdfa
+$ gzip a.foo 
+$ ls a.foo*
+a.foo.gz
+$ gunzip a.foo.gz 
+$ ls a.foo*
+a.foo
+$ cat a.foo 
+asdfa
+$ 
+```
+
+
+### curl {#curl}
+
+
+#### 常用选项 {#常用选项}
+
+-   --resolve，--resolve &lt;[+]host:port:addr[,addr]...&gt; <br/>
+    macos上的面 <br/>
+    ```text
+    Provide a custom address for a specific host and port pair. Using this, you can make the curl requests(s) use a specified address and prevent the otherwise normally resolved address to be used. Consider it a sort of /etc/hosts alternative provided on the command line. The port number should be the number used for the specific protocol the host will be used for. It means you need several entries if you want to provide address for the same host but different ports.
+    
+    By specifying '*' as host you can tell curl to resolve any host and specific port pair to the specified address. Wildcard is resolved last so any --resolve with a specific host and port will be used first.
+    
+    The provided address set by this option will be used even if -4, --ipv4 or -6, --ipv6 is set to make curl use another IP version.
+    
+    By prefixing the host with a '+' you can make the entry time out after curl's default timeout (1 minute). Note that this will only make sense for long running parallel transfers with a lot of files. In such cases, if this option is used curl will try to resolve the host as it normally would once the timeout has expired.
+    
+    Support for providing the IP address within [brackets] was added in 7.57.0.
+    Support for providing multiple IP addresses per entry was added in 7.59.0.
+    Support for resolving with wildcard was added in 7.64.0.
+    Support for the '+' prefix was was added in 7.75.0.
+    This option can be used many times to add many host names to resolve.
+    Example:
+     curl --resolve example.com:443:127.0.0.1 https://example.com
+    
+    Added in 7.21.3.
+    ```
+
+
+#### 典型场景 {#典型场景}
+
+-   curl带静态dns解析 <br/>
+    如下示例： <br/>
+    ```text
+    $ curl 127.0.0.1
+    <html><body><h1>It works!</h1></body></html>
+    $ curl 127.0.0.1:80
+    <html><body><h1>It works!</h1></body></html>
+    $ curl --resolve example.com:80:127.0.0.1 example.com
+    <html><body><h1>It works!</h1></body></html>
+    $ curl --resolve example.com:80:127.0.0.1 example.com:80
+    <html><body><h1>It works!</h1></body></html>
+    $ curl --resolve example.com:80:127.0.0.1 --resolve foobar.com:80:127.0.0.1 foobar.com
+    <html><body><h1>It works!</h1></body></html>
+    $ curl --resolve example.com:80:127.0.0.1 --resolve foobar.com:80:127.0.0.1 example.com
+    <html><body><h1>It works!</h1></body></html>
+    $ 
+    ```
+    这里，需要注意下，dns应该是不带端口的。但是，curl指定的时候，必须要指定端口。后面的使用，如果不是默认端口，还应该显式指定端口。 <br/>
 
 
 ## 典型场景 {#典型场景}
