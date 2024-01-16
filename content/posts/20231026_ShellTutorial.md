@@ -15,11 +15,12 @@ draft = false
 - [通配符](#通配符)
 - [行分隔符](#行分隔符)
 - [多条命令组合](#多条命令组合)
-- [命令描述符](#命令描述符)
+- [将命令的输出赋值给变量](#将命令的输出赋值给变量)
 - [重定向和文件描述符](#重定向和文件描述符)
 - [字符串操作](#字符串操作)
     - [按照长度截取](#按照长度截取)
     - [按照内容截取](#按照内容截取)
+    - [字符串比对](#字符串比对)
 - [case语句](#case语句)
     - [基本语法](#基本语法)
     - [场景示例](#场景示例)
@@ -35,6 +36,7 @@ draft = false
     - [判断目录是否为空](#判断目录是否为空)
 - [循环](#循环)
     - [while](#while)
+        - [典型场景](#典型场景)
     - [for](#for)
     - [break](#break)
 - [常用命令](#常用命令)
@@ -135,6 +137,7 @@ draft = false
     - [curl](#curl)
         - [常用选项](#常用选项)
         - [典型场景](#典型场景)
+    - [eval](#eval)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -389,7 +392,18 @@ shell语句中，分号和换行都可以作为行分隔符，因此，每条语
 | &vert;&vert; | 命令1 &vert;&vert; 命令2 | 如果命令1执行不正确( `$?≠0` )，则命令2才会执行；否则，命令2不会执行 |
 
 
-## 命令描述符 {#命令描述符}
+## 将命令的输出赋值给变量 {#将命令的输出赋值给变量}
+
+两种方式，如下： <br/>
+
+```text
+$ date_str1=$(date "+%Y-%m-%d")
+$ date_str2=`date "+%Y-%m-%d"`
+$ echo $date_str1
+2024-01-16
+$ echo $date_str2
+2024-01-16
+```
 
 
 ## 重定向和文件描述符 {#重定向和文件描述符}
@@ -539,6 +553,50 @@ $
     ```
 
 其中， `*` 只是一个通配符，可以不要。另外，这里面配置的 `*string` 、 `string*` 等截取模式实际上就是在字符串中将这些去掉，只要剩下的内容，这样，就好记了。 <br/>
+
+
+### 字符串比对 {#字符串比对}
+
+有三种方式： <br/>
+
+-   test命令 <br/>
+    ```text
+    str1=asdf
+    str2=qwer
+    if test "$str1" = "$str2"; then
+        echo "字符串相等"
+    elif test "$str1" \< "$str2"; then
+        echo "str1小于str2"
+    else
+        echo "str1大于str2"
+    fi
+    ```
+-   方括号 <br/>
+    ```text
+    str1=asdf
+    str2=qwer
+    if [ "$str1" = "$str2" ]; then
+        echo "字符串相等"
+    elif [ "$str1" \< "$str2" ]; then
+        echo "str1小于str2"
+    else
+        echo "str1大于str2"
+    fi
+    ```
+    注意这里的大于号和小于号，需要反斜线转义。 <br/>
+-   双方括号 <br/>
+    ```text
+    str1=asdf
+    str2=qwer
+    if [[ "$str1" = "$str2" ]]; then
+        echo "字符串相等"
+    elif [[ "$str1" < "$str2" ]]; then
+        echo "str1小于str2"
+    else
+        echo "str1大于str2"
+    fi
+    ```
+    方括号比较强大，也支持正则匹配，见[字符串判断](#字符串判断)。 <br/>
 
 
 ## case语句 {#case语句}
@@ -801,6 +859,30 @@ done
 ```
 
 
+#### 典型场景 {#典型场景}
+
+-   循环读取命令的输出，逐行处理。 <br/>
+    可以使用如下命令： <br/>
+    ```bash
+    ls *.log | while read -r filename;
+    do
+        echo $filename
+    done
+    ```
+    效果如下： <br/>
+    ```text
+    ls *.log
+    sample.log	sample2.log
+    $ ls *.log | while read -r filename;
+    > do
+    >     echo $filename
+    > done
+    sample.log
+    sample2.log
+    $ 
+    ```
+
+
 ### for {#for}
 
 参考[^fn:10] <br/>
@@ -1010,6 +1092,16 @@ DATE: 2023-10-27
 TIME: 10:35:55
 $ date "+%Y%m%d_%H%M%S"
 20231027_105958
+```
+
+获取当前时间(年份只要后两位，用 `%y` )： <br/>
+
+```text
+$ date "+%Y.%m.%d"
+2024.01.16
+$ date "+%y.%m.%d"
+24.01.16
+$
 ```
 
 也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:12]。 <br/>
@@ -3381,6 +3473,24 @@ $
     $ 
     ```
     这里，需要注意下，dns应该是不带端口的。但是，curl指定的时候，必须要指定端口。后面的使用，如果不是默认端口，还应该显式指定端口。 <br/>
+
+
+### eval {#eval}
+
+通过这个命令，可以执行保存在一个变量中的命令。 <br/>
+可以用通过它，实现将一个变量中的变量名替换为变量的值。如下： <br/>
+
+```text
+$ cat_name=PaoPao
+$ action='hit $cat_name'
+$ action_str='hit $cat_name'
+$ echo $action_str
+hit $cat_name
+$ action_res=$(eval "echo $action_str")
+$ echo $action_res
+hit PaoPao
+$ 
+```
 
 
 ## 典型场景 {#典型场景}
