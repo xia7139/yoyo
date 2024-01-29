@@ -144,6 +144,7 @@ draft = false
     - [读取内容时忽略第一行](#读取内容时忽略第一行)
     - [同时输出多行](#同时输出多行)
     - [遍历目录中的全部文件](#遍历目录中的全部文件)
+    - [递归打印目录结构的脚本](#递归打印目录结构的脚本)
 
 </div>
 <!--endtoc-->
@@ -3623,6 +3624,89 @@ now file: ./file/getFileListOfDirRecursive.sh
 now file: ./getFileListOfDirRecursive.sh
 now dir: ./img
 now file: ./img/01_RegexCompare.png
+$
+```
+
+注意：这个脚本应该没法处理目录和文件名中有空格的情况。 <br/>
+
+
+### 递归打印目录结构的脚本 {#递归打印目录结构的脚本}
+
+如下： <br/>
+
+```text
+$ cat traverseShowDirectoryStructure.sh 
+# 接收三个参数：目录、遍历层级、补全前缀
+function getFileListOfDir(){
+	# $1, now dir
+	# $2, traversing hierarchy
+	# $3, output prefix
+	# 判断目录是否为空
+	if [ $2 -gt 0 ]; then
+		if [ -z "$(ls -A "$1")" ]; then
+			# 目录为空，结束该函数执行
+			return 0
+		fi
+
+		# 这里只能用星花展开，不能解析ls的输出，不然不支持文件和目录中带空格的情况
+		for file in "$1"/*
+		do
+			if test -f "$file"
+			then
+				echo "$3""${file##*/}"
+			else
+				echo "$3""${file##*/}/"
+				hierarchy=$2
+				getFileListOfDir "$file" $((hierarchy - 1)) "$3|------"
+			fi
+		done
+	else
+		return 0;
+	fi
+}
+
+# 接收三个参数：$1目录、$2遍历层级、$3补全前缀
+if [ -z "$(ls -A $1)" ]; then
+	# 目录为空，直接打印目录名，然后结束函数执行
+	echo "$1/"
+else
+	echo "$1/"
+	# 接收脚本的第一个参数作为指定目录
+	getFileListOfDir "$1" "$2" "|------"
+fi
+$ 
+```
+
+这里需要注意，在实现这个循环遍历时，不能用解析ls输出的方式遍历文件。只能用星花展开的方式，不然不支持文件名和目录名中有空格的情况。 <br/>
+运行效果如下： <br/>
+
+```text
+$ pwd
+/Users/chengxia/Developer/roam/blog/20231026_ShellTutorial/file
+$ sh traverseShowDirectoryStructure.sh ~/temp/tar_test 3  ""
+/Users/chengxia/temp/tar_test/
+|------a.txt
+|------all.tar
+|------all0/
+|------|------a.txt
+|------|------b.txt
+|------|------c.txt
+|------all1/
+|------|------a.txt
+|------|------b.txt
+|------|------c.txt
+|------b.txt
+|------c.txt
+|------log.log
+|------tar_test2/
+|------|------a.txt
+|------|------all.tar
+|------|------asdf/
+|------|------|------a.txt
+|------|------|------b.txt
+|------|------|------c.txt
+|------|------b.txt
+|------|------c.txt
 $
 ```
 
