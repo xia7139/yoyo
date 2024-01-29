@@ -3627,7 +3627,7 @@ now file: ./img/01_RegexCompare.png
 $
 ```
 
-注意：这个脚本应该没法处理目录和文件名中有空格的情况。 <br/>
+注意：这个脚本应该可以处理目录和文件名中有空格的情况，因为用的是星花展开做的遍历。 <br/>
 
 
 ### 递归打印目录结构的脚本 {#递归打印目录结构的脚本}
@@ -3649,15 +3649,22 @@ function getFileListOfDir(){
 		fi
 
 		# 这里只能用星花展开，不能解析ls的输出，不然不支持文件和目录中带空格的情况
-		for file in "$1"/*
+		for file in "$1"/* "$1"/.*
 		do
+			# 忽略.和..
+			case "$file" in "$1/."|"$1/..") continue; esac
 			if test -f "$file"
 			then
 				echo "$3""${file##*/}"
-			else
+			elif test -d "$file"
+			then
 				echo "$3""${file##*/}/"
 				hierarchy=$2
 				getFileListOfDir "$file" $((hierarchy - 1)) "$3|------"
+			else
+				# 走到这儿说明这个目录中，只有.开头的文件
+				# 半角冒号用于占位，空语句
+				:
 			fi
 		done
 	else
@@ -3674,7 +3681,6 @@ else
 	# 接收脚本的第一个参数作为指定目录
 	getFileListOfDir "$1" "$2" "|------"
 fi
-$ 
 ```
 
 这里需要注意，在实现这个循环遍历时，不能用解析ls输出的方式遍历文件。只能用星花展开的方式，不然不支持文件名和目录名中有空格的情况。 <br/>
@@ -3707,6 +3713,7 @@ $ sh traverseShowDirectoryStructure.sh ~/temp/tar_test 3  ""
 |------|------|------c.txt
 |------|------b.txt
 |------|------c.txt
+|------|------.a.txt.swp
 $
 ```
 
