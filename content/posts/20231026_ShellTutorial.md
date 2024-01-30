@@ -17,6 +17,11 @@ draft = false
 - [多条命令组合](#多条命令组合)
 - [将命令的输出赋值给变量](#将命令的输出赋值给变量)
 - [重定向和文件描述符](#重定向和文件描述符)
+- [算术运算](#算术运算)
+    - [使用expr](#使用expr)
+    - [使用 `$(( ))`](#使用)
+    - [使用 `$[ ]`](#使用)
+    - [使用let命令](#使用let命令)
 - [字符串操作](#字符串操作)
     - [按照长度截取](#按照长度截取)
     - [按照内容截取](#按照内容截取)
@@ -507,6 +512,120 @@ while read -u 3 line;do echo "$line"; read -p "Press any key" -n 1;done
 链接[^fn:6]中解释了 `1<&3-` 。 <br/>
 
 
+## 算术运算 {#算术运算}
+
+参考[^fn:7] <br/>
+
+
+### 使用expr {#使用expr}
+
+注意，运算符和数字之间必须要有空格，而且乘号需要用斜线转义。如下： <br/>
+
+```text
+$ result_multi=`expr 6 \* 3`
+$ result_add=`expr 6 + 3`
+$ result_minus=`expr 6 - 3`
+$ result_multi=`expr 6 \* 3`
+$ result_divide=`expr 6 / 3`
+$ echo $result_add $result_minus $result_multi $result_divide
+9 3 18 2
+$ echo `expr 6 % 3`
+0
+```
+
+
+### 使用 `$(( ))` {#使用}
+
+如下： <br/>
+
+```text
+$ echo $((6+3))
+9
+$ echo $((6-3))
+3
+$ echo $((6*3))
+18
+$ echo $((6/3))
+2
+$ echo $((6%3))
+0
+$ echo $((6**3))
+216
+$ m=6
+$ n=3
+$ echo `expr m + n`
+expr: not a decimal number: 'm'
+
+$ echo `expr $m + $n`
+9
+$ m=6
+$ n=3
+$ echo $((m+n))
+9
+$ echo $((m+1))
+7
+$ 
+```
+
+
+### 使用 `$[ ]` {#使用}
+
+如下： <br/>
+
+```text
+$ echo $[6+3]
+9
+$ echo $[6-3]
+3
+$ echo $[6*3]
+18
+$ echo $[6/3]
+2
+$ echo $[6%3]
+0
+$ echo $[6**3]
+216
+$ m=6
+$ n=3
+$ echo $[m+n]
+9
+$ echo $[m+1]
+7
+$ 
+```
+
+
+### 使用let命令 {#使用let命令}
+
+如下： <br/>
+
+```text
+$ let a=6+3
+$ echo $a
+9
+$ let a=6-3
+$ echo $a
+3
+$ let a=6*3
+$ echo $a
+18
+$ let a=6/3
+$ echo $a
+2
+$ let a=6%3
+$ echo $a
+0
+$ m=6
+$ n=3
+$ let a=m+n
+$ echo $a
+9
+$ let a=m+1
+$ echo $a
+7
+```
+
+
 ## 字符串操作 {#字符串操作}
 
 
@@ -645,7 +764,7 @@ $
 
 ### 基本语法 {#基本语法}
 
-if语句的基本语法[^fn:7]如下： <br/>
+if语句的基本语法[^fn:8]如下： <br/>
 
 ```text
 if [ condition ] 
@@ -730,7 +849,7 @@ then
 fi
 ```
 
-这里的正则是posix规范的[^fn:8]，而非一般的perl或者javascript[^fn:9]，如下： <br/>
+这里的正则是posix规范的[^fn:9]，而非一般的perl或者javascript[^fn:10]，如下： <br/>
 ![](/ox-hugo/01_RegexCompare.png) <br/>
 
 
@@ -848,7 +967,7 @@ $
 
 ### while {#while}
 
-参考[^fn:10] <br/>
+参考[^fn:11] <br/>
 
 ```bash
 i=1
@@ -886,7 +1005,7 @@ done
 
 ### for {#for}
 
-参考[^fn:10] <br/>
+参考[^fn:11] <br/>
 
 ```bash
 for ((i=1;i<10;i++)) ; do
@@ -917,7 +1036,7 @@ done
 
 #### 常用选项 {#常用选项}
 
-参考：[^fn:11] <br/>
+参考：[^fn:12] <br/>
 
 -   -i, --ip-address, Display the IP address(es) of the host. <br/>
     显示ip地址。 <br/>
@@ -1105,7 +1224,7 @@ $ date "+%y.%m.%d"
 $
 ```
 
-也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:12]。 <br/>
+也可以通过%N来获取到纳秒(毫秒的千分之一)，但是macOS上不支持[^fn:13]。 <br/>
 获取一天以前的时间。 <br/>
 Ubuntu下： <br/>
 
@@ -1172,10 +1291,10 @@ macos终端man page描述： <br/>
 
 参考材料如下： <br/>
 
--   `-prune` 是一个动作(action)，而不是一个条件判断(test)。[^fn:13] <br/>
--   说明了在find执行时，如何屏蔽某个指定目录。[^fn:14] <br/>
--   中文博客里面讲得清楚又简单的材料[^fn:15] <br/>
--   介绍了 `-print` 选项只对前面的表达式有效。[^fn:16] <br/>
+-   `-prune` 是一个动作(action)，而不是一个条件判断(test)。[^fn:14] <br/>
+-   说明了在find执行时，如何屏蔽某个指定目录。[^fn:15] <br/>
+-   中文博客里面讲得清楚又简单的材料[^fn:16] <br/>
+-   介绍了 `-print` 选项只对前面的表达式有效。[^fn:17] <br/>
     这里说的action只对前面的筛选表达式有效，是指前面or分隔的那些表达式段，并非只指紧邻 `-print` 的那一个筛选条件。如果要改变这个action的作用范围，需要在前面条件筛选表达式中加括号控制。 <br/>
 
 这个选项的含义，就是将前面匹配条件命中的结果，在最终的结果集中删除。注意这个prune一直都是返回true(exec选项也类似，不过是后面的命令执行成功后才会返回true)。 <br/>
@@ -1270,7 +1389,7 @@ $
 find . -maxdepth 1 -type f -mtime -15
 ```
 
-mtime说明[^fn:17]： <br/>
+mtime说明[^fn:18]： <br/>
 如何更好的理解find -mtime +N/-N/N，这里小结下： <br/>
 -mtime n : n为数字，意思为在n天之前的“一天之内”被更改过内容的文件 <br/>
 -mtime +n : 列出在n天之前（不含n天本身）被更改过内容的文件名 <br/>
@@ -1302,14 +1421,14 @@ find . -maxdepth 1 -type f -name "*as*"
 
 #### 打印时间 {#打印时间}
 
-参考[^fn:18] <br/>
+参考[^fn:19] <br/>
 
 ```bash
 find . -maxdepth 1 -type f -printf "%p %TY-%Tm-%Td %TH:%TM:%TS %Tz\n"
 ```
 
-这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:19]。 <br/>
-不过，macos中的find命令，并不支持-printf选项[^fn:20]。 <br/>
+这里面%p表示文件名，%T表示是修改时间，可以换成%C表示拿到状态改变的时间，换成%A拿到上次访问的时间[^fn:20]。 <br/>
+不过，macos中的find命令，并不支持-printf选项[^fn:21]。 <br/>
 
 
 #### 查找某个时间区间内的文件 {#查找某个时间区间内的文件}
@@ -1328,7 +1447,7 @@ $
 
 #### 根据文件大小查找文件 {#根据文件大小查找文件}
 
-find命令的 `-size` 选项用于指定文件大小作为查找条件[^fn:21]，支持的单位有： <br/>
+find命令的 `-size` 选项用于指定文件大小作为查找条件[^fn:22]，支持的单位有： <br/>
 
 -   b - 512字节的块（如果没有使用后缀，这是默认的）。 <br/>
 -   c - 字节 <br/>
@@ -1381,7 +1500,7 @@ filename2nd:./Math.txt
 $
 ```
 
-参考[^fn:22] <br/>
+参考[^fn:23] <br/>
 
 
 #### find命令按照字母序查找，查找文件名小于某个字符串的文件 {#find命令按照字母序查找-查找文件名小于某个字符串的文件}
@@ -1409,7 +1528,7 @@ $
 ### tar {#tar}
 
 tar命令的使用 <br/>
-tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:23] <br/>
+tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，还原备份文件的工具程序，它可以加入，解开备份文件内的文件。[^fn:24] <br/>
 
 
 #### 常用选项说明 {#常用选项说明}
@@ -1577,7 +1696,7 @@ $ tar -tvf all.tar
 $ 
 ```
 
-注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:24] <br/>
+注意，这里tar不支持在打包的时候，覆盖包中已有的同名文件。原因可能是因为，这个命令诞生于磁带打包场景，磁带这种存储介质，只适合追加写，更新前面的内容(随记写)效率不佳。参考[^fn:25] <br/>
 
 
 #### 查看压缩包中的内容 {#查看压缩包中的内容}
@@ -1673,7 +1792,7 @@ $ echo -e "asdf\tqwer\ttyui" | cut -f 1,2
 asdf	qwer
 ```
 
-这里echo命令的-e选项是为了启用反斜杠转义[^fn:25]。 <br/>
+这里echo命令的-e选项是为了启用反斜杠转义[^fn:26]。 <br/>
 
 指定分隔符为空格： <br/>
 
@@ -1742,7 +1861,7 @@ drwxr-xr-x	chengxia	160	26	all1
 -rw-r--r--	chengxia	0	27	c.txt
 ```
 
-不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:26]。如下： <br/>
+不过，处理ls命令的输出，还是结合awk命令使用比较好[^fn:27]。如下： <br/>
 
 ```text
 $ ls -al
@@ -1795,7 +1914,7 @@ $ ls -al | awk '{print "权限: "$1", 用户: "$3}'
 
 #### 选项 {#选项}
 
-参考[^fn:27]： <br/>
+参考[^fn:28]： <br/>
 
 ```text
 read [-a aname] [-d delim] [-n nchars]
@@ -2024,7 +2143,7 @@ $
 
 ###### 行号筛选 {#行号筛选}
 
-参考[^fn:28] <br/>
+参考[^fn:29] <br/>
 
 -   筛选指定的行号 <br/>
     ```text
@@ -2147,7 +2266,7 @@ $
     cat is lovely.
     $
     ```
--   打印包含从命中正则1到命中正则2之间的行[^fn:29] <br/>
+-   打印包含从命中正则1到命中正则2之间的行[^fn:30] <br/>
     如下是一个例子，可以看出，都不包含正则命中的行： <br/>
     ```bash
     $ echo "cat is lovely.
@@ -2344,7 +2463,7 @@ $
 
 ##### 输出文件中的匹配行之前的行 {#输出文件中的匹配行之前的行}
 
-参考[^fn:30] <br/>
+参考[^fn:31] <br/>
 思路就是将每一行的内容都给到一个变量，匹配行命中时，检测下前面一行是否是不匹配，如果是就打印前面一行和当前匹配行。如下： <br/>
 
 ```text
@@ -2359,7 +2478,7 @@ dinner" | awk '/breakfast/{if(line && line !~ /breakfast/) print line; print}{li
 
 ```
 
-这个报错和shell的设置有关系，需要修改设置之后，可以正常执行[^fn:31]。解决方式就是在命令之前执行下 `set +H` 即可，如下： <br/>
+这个报错和shell的设置有关系，需要修改设置之后，可以正常执行[^fn:32]。解决方式就是在命令之前执行下 `set +H` 即可，如下： <br/>
 
 ```text
 $ set +H
@@ -2828,7 +2947,7 @@ comm [-123i] file1 file2
     在比对时，忽略大小写。 <br/>
 
 实际上comm在不加任何选项时，会把比较的两个中的行处理成三列，第一列是只在file1中有的行，第二列是只在file2中有的行，第三列是两个文件中都有的行。从这个角度，就比较容易理解man page里面的说明了。 <br/>
-参考[^fn:32] <br/>
+参考[^fn:33] <br/>
 
 
 #### 场景 {#场景}
@@ -2880,7 +2999,7 @@ $ comm -1 -3 <(ls tar_test | sort) <(ls hhh_test | sort)
 d.txt
 ```
 
-参考[^fn:33] <br/>
+参考[^fn:34] <br/>
 
 
 ### echo {#echo}
@@ -2891,7 +3010,7 @@ d.txt
 -   -n, 不换行输出 <br/>
     缺省echo会在输出内容最后追加换行，加了-n之后，就原样输出内容，不会再在最后加换行。 <br/>
 -   -e, enable interpretation of backslash escapes <br/>
-    输出转义字符，常用的转义字符有\r、\n等，如下[^fn:34]： <br/>
+    输出转义字符，常用的转义字符有\r、\n等，如下[^fn:35]： <br/>
     -   \a：ALERT / BELL (从系统喇叭送出铃声) <br/>
     -   \b：BACKSPACE ，也就是向左删除键 <br/>
     -   \c：取消行末之换行符号 <br/>
@@ -3090,7 +3209,7 @@ Ctrl+Z实际上是将文件放到后台运行。jobs命令，可以查看当前�
 
 ### lsof {#lsof}
 
-lsof 是 linux 下的一个非常实用的系统级的监控、诊断工具。它是 List Open Files的缩写。使用 lsof，你可以获取任何被打开文件的各种信息，因为 lsof 需要访问核心内存和各种文件，所以必须以 root 用户的身份运行它才能够充分地发挥其功能[^fn:35]。 <br/>
+lsof 是 linux 下的一个非常实用的系统级的监控、诊断工具。它是 List Open Files的缩写。使用 lsof，你可以获取任何被打开文件的各种信息，因为 lsof 需要访问核心内存和各种文件，所以必须以 root 用户的身份运行它才能够充分地发挥其功能[^fn:36]。 <br/>
 linux中，有时候，删除文件之后，磁盘空间并未释放。这是因为有文件占用，需要查看占用删除文件的进程，然后，关掉或者重启这个进程，磁盘空间就会被释放。执行如下命令，查找占用文件的进程： <br/>
 
 ```text
@@ -3147,7 +3266,7 @@ lsof | grep delete
 
 ### locale {#locale}
 
-参考[^fn:36] <br/>
+参考[^fn:37] <br/>
 
 
 #### 机制说明 {#机制说明}
@@ -3522,7 +3641,7 @@ $ echo $BASH_VERSINFO
 $
 ```
 
-参考[^fn:37] <br/>
+参考[^fn:38] <br/>
 
 
 ### 读取内容时忽略第一行 {#读取内容时忽略第一行}
@@ -3551,7 +3670,7 @@ $
 ```
 
 原理上，其实非常简单。这里通过管道的作用，将ls的输出给到了管道右侧命令的文件描述符0(stdin)，右侧命令通过括号在一个subshell中执行。在同一个子shell中，对于一个文件描述符，如果一个命令已经读取了一行，下一个命令只能从下一行开始读取。这样，就实现了忽略第一行的效果。 <br/>
-参考[^fn:38]。 <br/>
+参考[^fn:39]。 <br/>
 
 
 ### 同时输出多行 {#同时输出多行}
@@ -3582,7 +3701,7 @@ $
     d line 4
     $
     ```
-    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:39]。 <br/>
+    其中， `_end_` 可以是任何内容，只要上下一样就可以。但是中间不能出现 `_end_` 开头的行，否则提前结束[^fn:40]。 <br/>
 
 
 ### 遍历目录中的全部文件 {#遍历目录中的全部文件}
@@ -3723,36 +3842,37 @@ $
 [^fn:4]: [Linux Shell基础 多个命令中的分号(;)、与(&amp;&amp;) 、 或(||)](https://www.cnblogs.com/lizhouwei/p/9991635.html) <br/>
 [^fn:5]: [Illustrated Redirection Tutorial](https://web.archive.org/web/20230315225157/https://wiki.bash-hackers.org/howto/redirection_tutorial)  <br/>
 [^fn:6]: [3.6.9 Moving File Descriptors](https://www.gnu.org/software/bash/manual/html_node/Redirections.html) <br/>
-[^fn:7]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
-[^fn:8]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
-[^fn:9]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
-[^fn:10]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
-[^fn:11]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
-[^fn:12]: [How do I get the current Unix time in milliseconds in Bash?](https://serverfault.com/questions/151109/how-do-i-get-the-current-unix-time-in-milliseconds-in-bash) <br/>
-[^fn:13]: [How to use '-prune' option of 'find' in sh?](https://stackoverflow.com/questions/1489277/how-to-use-prune-option-of-find-in-sh)  <br/>
-[^fn:14]: [How do I exclude a directory when using \`find\`?](https://stackoverflow.com/questions/4210042/how-do-i-exclude-a-directory-when-using-find/15736463?r=SearchResults&s=1%7C302.8193#15736463) <br/>
-[^fn:15]: [find排除一个或多个目录的方法](https://www.jianshu.com/p/428ef40e384d)  <br/>
-[^fn:16]: [find命令的prune用法总结](https://blog.csdn.net/weixin_43999327/article/details/118653060) <br/>
-[^fn:17]: [彻底搞明白find命令mtime含义和用法](https://blog.csdn.net/db_murphy/article/details/107053545)  <br/>
-[^fn:18]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
-[^fn:19]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
-[^fn:20]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
-[^fn:21]: [find命令根据文件大小来搜索文件](https://zhuanlan.zhihu.com/p/616467047?utm_id=0) <br/>
-[^fn:22]: [Executing Multiple Commands in Find -exec](https://www.baeldung.com/linux/find-exec-multiple-commands)  <br/>
-[^fn:23]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
-[^fn:24]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
-[^fn:25]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
-[^fn:26]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
-[^fn:27]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
-[^fn:28]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
-[^fn:29]: [How to select lines between two marker patterns which may occur multiple times with awk/sed](https://stackoverflow.com/questions/17988756/how-to-select-lines-between-two-marker-patterns-which-may-occur-multiple-times-w) <br/>
-[^fn:30]: [awk print matching line and line before the matched](https://stackoverflow.com/questions/4891383/awk-print-matching-line-and-line-before-the-matched)  <br/>
-[^fn:31]: [What is "-bash: !": event not found"](https://serverfault.com/questions/208265/what-is-bash-event-not-found) <br/>
-[^fn:32]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
-[^fn:33]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
-[^fn:34]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
-[^fn:35]: [Linux命令详解（15）lsof命令](https://blog.csdn.net/bigwood99/article/details/126834989)  <br/>
-[^fn:36]: [linux下设置locale](https://cloud.tencent.com/developer/article/1671446?from=15425) <br/>
-[^fn:37]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
-[^fn:38]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
-[^fn:39]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
+[^fn:7]: [Bash shell 的算术运算有四种方式](https://blog.csdn.net/hansel/article/details/8736775) <br/>
+[^fn:8]: [shell if 判断，字符正则匹配](https://www.itxm.cn/post/ajbjje1a1.html) <br/>
+[^fn:9]: [Regex](https://en.wikipedia.org/wiki/Regular_expression#POSIX)  <br/>
+[^fn:10]: [RegEx with \d doesn’t work in if-else statement](https://askubuntu.com/questions/1143710/regex-with-d-doesn-t-work-in-if-else-statement-with#:~:text=d%20and%20w%20don%27t%20work%20in%20POSIX%20regular,%5B%3Adigit%3A%5D%5D%2B-%2B%20%5D%5D%3Bthen%20echo%20%22Pre%22%20else%20echo%20%22Release%22%20fi) <br/>
+[^fn:11]: [shell统计循环次数的方法](https://blog.csdn.net/tjcwt2011/article/details/128498972)  <br/>
+[^fn:12]: [hostname man page](https://www.man7.org/linux/man-pages/man1/hostname.1.html) <br/>
+[^fn:13]: [How do I get the current Unix time in milliseconds in Bash?](https://serverfault.com/questions/151109/how-do-i-get-the-current-unix-time-in-milliseconds-in-bash) <br/>
+[^fn:14]: [How to use '-prune' option of 'find' in sh?](https://stackoverflow.com/questions/1489277/how-to-use-prune-option-of-find-in-sh)  <br/>
+[^fn:15]: [How do I exclude a directory when using \`find\`?](https://stackoverflow.com/questions/4210042/how-do-i-exclude-a-directory-when-using-find/15736463?r=SearchResults&s=1%7C302.8193#15736463) <br/>
+[^fn:16]: [find排除一个或多个目录的方法](https://www.jianshu.com/p/428ef40e384d)  <br/>
+[^fn:17]: [find命令的prune用法总结](https://blog.csdn.net/weixin_43999327/article/details/118653060) <br/>
+[^fn:18]: [彻底搞明白find命令mtime含义和用法](https://blog.csdn.net/db_murphy/article/details/107053545)  <br/>
+[^fn:19]: [How to display modified date time with 'find' command?](https://stackoverflow.com/questions/20893022/how-to-display-modified-date-time-with-find-command) <br/>
+[^fn:20]: [man page of find](https://man7.org/linux/man-pages/man1/find.1.html)  <br/>
+[^fn:21]: [find lacks the option -printf, now what?](https://stackoverflow.com/questions/752818/find-lacks-the-option-printf-now-what) <br/>
+[^fn:22]: [find命令根据文件大小来搜索文件](https://zhuanlan.zhihu.com/p/616467047?utm_id=0) <br/>
+[^fn:23]: [Executing Multiple Commands in Find -exec](https://www.baeldung.com/linux/find-exec-multiple-commands)  <br/>
+[^fn:24]: [Linux tar 命令](https://www.runoob.com/linux/linux-comm-tar.html)  <br/>
+[^fn:25]: [GNU tar - update tar file, overwriting the original file in command line](https://askubuntu.com/questions/1384589/gnu-tar-update-tar-file-overwriting-the-original-file-in-command-linewhich-i)  <br/>
+[^fn:26]: [linux 命令：echo 详解](https://blog.csdn.net/yspg_217/article/details/122187643)  <br/>
+[^fn:27]: [Cutting the column including size](https://stackoverflow.com/questions/16374616/cutting-the-column-including-size) <br/>
+[^fn:28]: [Bash read 命令读数据](https://www.junmajinlong.com/shell/script_course/shell_read/) <br/>
+[^fn:29]: [Unix文本处理工具之awk](https://blog.csdn.net/xia7139/article/details/49806421) <br/>
+[^fn:30]: [How to select lines between two marker patterns which may occur multiple times with awk/sed](https://stackoverflow.com/questions/17988756/how-to-select-lines-between-two-marker-patterns-which-may-occur-multiple-times-w) <br/>
+[^fn:31]: [awk print matching line and line before the matched](https://stackoverflow.com/questions/4891383/awk-print-matching-line-and-line-before-the-matched)  <br/>
+[^fn:32]: [What is "-bash: !": event not found"](https://serverfault.com/questions/208265/what-is-bash-event-not-found) <br/>
+[^fn:33]: [Linux常用命令——comm命令](https://blog.csdn.net/weixin_43251547/article/details/128597850)  <br/>
+[^fn:34]: [Find common files between two folders](https://stackoverflow.com/questions/38827243/find-common-files-between-two-folders)  <br/>
+[^fn:35]: [別人 echo、你也 echo ，是問 echo 知多少？](http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=218853&page=3#pid1482452)  <br/>
+[^fn:36]: [Linux命令详解（15）lsof命令](https://blog.csdn.net/bigwood99/article/details/126834989)  <br/>
+[^fn:37]: [linux下设置locale](https://cloud.tencent.com/developer/article/1671446?from=15425) <br/>
+[^fn:38]: [How to get the Bash version number](https://stackoverflow.com/questions/9450604/how-to-get-the-bash-version-number) <br/>
+[^fn:39]: [remove first line in bash](https://superuser.com/questions/284258/remove-first-line-in-bash)  <br/>
+[^fn:40]: [shell同时输出多行信息](https://blog.51cto.com/u_15127527/3388614)  <br/>
