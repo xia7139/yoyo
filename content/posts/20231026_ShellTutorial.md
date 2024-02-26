@@ -73,6 +73,9 @@ draft = false
     - [tar](#tar)
         - [常用选项说明](#常用选项说明)
         - [打包](#打包)
+            - [整个目录的打包和解包](#整个目录的打包和解包)
+                - [打包](#打包)
+                - [解包](#解包)
             - [简单将同一目录下的多个文件打成一个tar](#简单将同一目录下的多个文件打成一个tar)
             - [查看tar包中的文件列表](#查看tar包中的文件列表)
             - [往存量tar中添加文件](#往存量tar中添加文件)
@@ -145,6 +148,7 @@ draft = false
         - [常用选项](#常用选项)
         - [典型场景](#典型场景)
     - [eval](#eval)
+    - [ssh](#ssh)
 - [典型场景](#典型场景)
     - [获取bash的进程的pid](#获取bash的进程的pid)
     - [获取bash的版本](#获取bash的版本)
@@ -1593,6 +1597,38 @@ tar(英文全拼：tape archive)命令用于备份文件。tar是用来建立，
 
 
 #### 打包 {#打包}
+
+
+##### 整个目录的打包和解包 {#整个目录的打包和解包}
+
+
+###### 打包 {#打包}
+
+```text
+# 将目录file_dir中的内容打包到file_dir.tar
+tar -cvf file_dir.tar file_dir
+# 将目录file_dir中的内容打包并压缩到file_dir.tar
+tar -czvf file_dir.tar file_dir
+```
+
+
+###### 解包 {#解包}
+
+这种带目录的解包，只需在要解压到的目的目录下，执行一般的解压操作，就会将tar中的目录解压到当前目录下。 <br/>
+
+```text
+# 解压到当前目录，覆盖已有的文件
+tar -xvf file_dir.tar
+# 解压到当前目录，不覆盖已有的文件
+tar -xkvf file_dir.tar
+```
+
+如果执行解压命令不是在解压到的目的目录下，可以通过 `-C` 参数指定解压路径： <br/>
+
+```text
+# 将 /path/to/tar/file_dir.tar 压缩包中的内容，解压到目录 /path/extract/dest/
+tar -xvf /path/to/tar/file_dir.tar -C /path/extract/dest/
+```
 
 
 ##### 简单将同一目录下的多个文件打成一个tar {#简单将同一目录下的多个文件打成一个tar}
@@ -3648,6 +3684,29 @@ $ action_res=$(eval "echo $action_str")
 $ echo $action_res
 hit PaoPao
 $ 
+```
+
+
+### ssh {#ssh}
+
+要通过SSH连接到远程服务器并执行命令，可以使用以下命令： <br/>
+
+```text
+ssh username@remote_server 'command'
+```
+
+其中，username为登录远程服务器的用户名，remote_server为远程服务器的IP地址或主机名。'command'表示需要在远程服务器上执行的命令。 <br/>
+如果想要将结果保存到本地文件中，可以使用重定向符号 &gt; 来指定输出文件路径： <br/>
+
+```text
+ssh username@remote_server 'command > output.txt'
+```
+
+这样会将命令的输出内容写入到远程服务器当前目录下的output.txt文件中。 <br/>
+如果要将命令输出内容写入本地服务器当前目录，可以使用命令 <br/>
+
+```text
+ssh username@remote_server 'command' > output.txt
 ```
 
 
