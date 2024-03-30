@@ -89,7 +89,8 @@ SpringBoot是Spring框架的模块。它用于轻松创建独立的生产级基�
 SpringBoot遵循一个分层的体系结构，其中每一层都与它的直接下层或上层(层次结构)进行通信。 <br/>
 
 之前了解 SpringBoot Architecture 后，我们必须了解其中的不同层和类。 SpringBoot中有四个层，如下所示： <br/>
-![](/ox-hugo/240326_Spring_Architecture.png) <br/>
+
+{{< figure src="/ox-hugo/240326_Spring_Architecture.png" >}} <br/>
 
 -   展示层 <br/>
     表示层负责处理HTTP请求，将JSON参数转换为对象，并对请求进行身份验证并将其传输到业务层。简而言之，它由视图即前端部分组成。 <br/>
@@ -98,7 +99,7 @@ SpringBoot遵循一个分层的体系结构，其中每一层都与它的直接�
 -   持久层 <br/>
     持久层包含所有存储逻辑，并将业务对象与数据库行进行相互转换。 <br/>
 -   数据库层 <br/>
-    在数据库层中， CRUD (创建，检索，更新， <br/>
+    在数据库层中， CRUD(创建，检索，更新，删除)操作。 <br/>
 
 
 ## Spring IoC容器 {#spring-ioc容器}
