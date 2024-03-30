@@ -2632,7 +2632,7 @@ spring-bean $
     	ApplicationContext ac = new AnnotationConfigApplicationContext(ProxyAdviceConfig.class);
     	Performance sp = (Performance) ac.getBean("singPerformance");
     	sp.perform();
-    	Encoreable encoreable = (Encoreable) sp;                                                      (getbeanofproxy)
+    	Encoreable encoreable = (Encoreable) sp;
     	encoreable.performEncore();
         }
     }
