@@ -43,8 +43,8 @@ draft = false
 
 ## SpringBoot介绍 {#springboot介绍}
 
-Spring Boot是用于创建微服务的基于Java的开源框架。它是由Pivotal Team开发的，用于构建独立的和生产就绪的弹簧应用程序。本章将向您介绍Spring Boot，并使您熟悉其基本概念。 <br/>
-本章节参考[^fn:1]。 <br/>
+Spring Boot是用于创建微服务的基于Java的开源框架。它是由Pivotal Team开发的，用于构建独立的和生产就绪的弹簧应用程序。 <br/>
+参考[^fn:1]。 <br/>
 
 
 ### Spring和Spring Boot对比 {#spring和spring-boot对比}
